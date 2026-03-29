@@ -5,58 +5,74 @@ layout: landing
 github: "https://github.com/latte-java/javaenv"
 ---
 
-## Prerequisites
-
-You need a Unix-like operating system (macOS or Linux).
-
-## Install via Homebrew
+## Install
 
 ```bash
-brew install latte-java/tap/javaenv
+curl -fsSL https://lattejava.org/javaenv/install | bash
 ```
 
-## Install from Source
+## Usage
 
 ```bash
-git clone https://github.com/latte-java/javaenv.git
-cd javaenv
-make install
-```
-
-## Verify Installation
-
-```bash
-javaenv --version
-```
-
-## List Available Versions
-
-```bash
-javaenv list-remote
-```
-
-## Install a Java Version
-
-```bash
+# Install the latest JDK 21
 javaenv install 21
-```
 
-## Set the Global Version
+# Install a specific version
+javaenv install 21.0.7+6
 
-```bash
+# List available versions from Adoptium
+javaenv install --list
+
+# Set the global Java version
 javaenv global 21
+
+# Set the local Java version for the current directory
+javaenv local 21
+
+# Set Java version for the current shell session (requires javaenv init)
+javaenv shell 21
+
+# Clear the shell version override
+javaenv shell --unset
+
+# Show the currently active version
+javaenv current
+
+# List installed versions
+javaenv versions
+
+# Print JAVA_HOME for the current version
+javaenv home
+
+# Remove an installed version
+javaenv uninstall 21.0.7+6
 ```
 
-## Verify
+## Version Resolution
 
-```java
-public class Hello {
-    public static void main(String[] args) {
-        System.out.println("Hello from Java " + System.getProperty("java.version"));
-    }
-}
-```
+javaenv resolves the Java version using this precedence:
 
+1. `JAVAENV_VERSION` env var (set by `javaenv shell`)
+2. `.javaversion` file in the current directory (searching up the tree)
+3. `~/.javaversion` (set by `javaenv global`)
+
+The file can contain a full version (`21.0.7+6`) or just a major version (`21`). A major version resolves to the highest installed patch for that major.
+
+## JAVA_HOME
+
+To set `JAVA_HOME` automatically and enable `javaenv shell`, add one of the following to your shell init file:
+
+**bash** (`~/.bashrc`):
 ```bash
-javac Hello.java && java Hello
+eval "$(javaenv init)"
+```
+
+**zsh** (`~/.zshrc`):
+```zsh
+eval "$(javaenv init)"
+```
+
+**fish** (`~/.config/fish/config.fish` or Oh My Fish `init.fish`):
+```fish
+javaenv init | source
 ```
