@@ -1,0 +1,6 @@
+---
+title: "cli"
+description: "Build command-line applications in Java"
+layout: landing
+github: "https://github.com/latte-java/cli"
+---
