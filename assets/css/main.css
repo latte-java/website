@@ -3,8 +3,7 @@
 @plugin "@tailwindcss/typography";
 @source "../../hugo_stats.json";
 
-@import "syntax-light.css";
-@import "syntax-dark.css";
+@import "syntax.css";
 
 @theme {
   --color-accent-400: oklch(0.7 0.15 230);
