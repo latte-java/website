@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between h-16">
       <!-- Logo -->
       <a href="/" class="flex items-center gap-3 shrink-0">
-        <img src="/images/logo.svg" alt="Latte Java" class="h-8 w-auto">
+        {{ partial "logo.html" (dict "class" "h-8 w-auto") }}
         <span class="font-bold text-lg text-slate-900 dark:text-white">Latte Java</span>
       </a>
 

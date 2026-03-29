@@ -3,7 +3,7 @@
     <div class="flex flex-col md:flex-row justify-between gap-8">
       <div>
         <a href="/" class="flex items-center gap-3">
-          <img src="/images/logo.svg" alt="Latte Java" class="h-8 w-auto">
+          {{ partial "logo.html" (dict "class" "h-8 w-auto") }}
           <span class="font-bold text-lg text-slate-900 dark:text-white">Latte Java</span>
         </a>
         <p class="mt-3 text-sm text-slate-500 dark:text-slate-400 max-w-xs">{{ .Site.Params.description }}</p>
