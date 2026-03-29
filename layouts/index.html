@@ -1,0 +1,41 @@
+{{ define "main" }}
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+      <div class="text-center">
+        <img src="/images/logo.svg" alt="Latte Java" class="h-24 w-auto mx-auto mb-8">
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 dark:text-white">
+          Latte Java
+        </h1>
+        <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          {{ .Site.Params.description }}
+        </p>
+        <div class="mt-10 flex items-center justify-center gap-4">
+          <a href="#projects" class="px-6 py-3 bg-accent-500 hover:bg-accent-600 text-white font-medium rounded-lg transition-colors">
+            Explore Projects
+          </a>
+          <a href="{{ .Site.Params.github }}" class="px-6 py-3 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors" target="_blank" rel="noopener">
+            GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Project Cards -->
+  <section id="projects" class="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white text-center mb-12">Projects</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {{ range .Site.Menus.projects }}
+          {{ with site.GetPage .PageRef }}
+            <a href="{{ .RelPermalink }}" class="group block p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-accent-500 dark:hover:border-accent-400 hover:shadow-lg transition-all">
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-accent-500 dark:group-hover:text-accent-400 transition-colors">{{ .Title }}</h3>
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ .Description }}</p>
+            </a>
+          {{ end }}
+        {{ end }}
+      </div>
+    </div>
+  </section>
+{{ end }}
