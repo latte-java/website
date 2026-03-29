@@ -12,6 +12,11 @@
   --color-accent-600: oklch(0.5 0.18 230);
 }
 
+/* Fix Chroma code blocks - prevent flex display from creating blank lines */
+.chroma .line {
+  display: inline;
+}
+
 /* Remove backtick pseudo-elements from inline code */
 .prose :where(code):not(:where([class~=not-prose],[class~=not-prose] *))::before,
 .prose :where(code):not(:where([class~=not-prose],[class~=not-prose] *))::after {
