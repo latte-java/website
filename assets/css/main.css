@@ -13,16 +13,11 @@
 
 /* Inline code styling (not inside pre/code blocks) */
 .prose :where(code):not(:where(pre code, [class~=not-prose] *)) {
-  background-color: var(--color-slate-100);
-  color: var(--color-slate-800);
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-size: 0.875em;
+  @apply bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-sm;
 }
 
 :is(.dark) .prose :where(code):not(:where(pre code, [class~=not-prose] *)) {
-  background-color: var(--color-slate-800);
-  color: var(--color-slate-200);
+  @apply bg-slate-800 text-slate-200;
 }
 
 /* Remove backtick pseudo-elements from inline code */
@@ -33,29 +28,25 @@
 
 /* TOC styling */
 .toc ul {
-  list-style: none;
-  padding-left: 0;
+  @apply list-none pl-0;
 }
 
 .toc ul ul {
-  padding-left: 1rem;
+  @apply pl-4;
 }
 
 .toc a {
-  display: block;
-  padding: 0.25rem 0;
-  color: var(--color-slate-500);
-  transition: color 0.15s;
+  @apply block py-1 text-slate-500 transition-colors duration-150;
 }
 
 .toc a:hover {
-  color: var(--color-slate-900);
+  @apply text-slate-900;
 }
 
 :is(.dark) .toc a {
-  color: var(--color-slate-400);
+  @apply text-slate-400;
 }
 
 :is(.dark) .toc a:hover {
-  color: var(--color-white);
+  @apply text-white;
 }
