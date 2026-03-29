@@ -10,3 +10,32 @@
   --color-accent-500: oklch(0.6 0.18 230);
   --color-accent-600: oklch(0.5 0.18 230);
 }
+
+/* TOC styling */
+.toc ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.toc ul ul {
+  padding-left: 1rem;
+}
+
+.toc a {
+  display: block;
+  padding: 0.25rem 0;
+  color: var(--color-slate-500);
+  transition: color 0.15s;
+}
+
+.toc a:hover {
+  color: var(--color-slate-900);
+}
+
+:is(.dark) .toc a {
+  color: var(--color-slate-400);
+}
+
+:is(.dark) .toc a:hover {
+  color: var(--color-white);
+}

@@ -1,0 +1,15 @@
+{{ $section := .CurrentSection }}
+{{ $pages := $section.Parent.RegularPagesRecursive }}
+<nav class="space-y-1">
+  <div class="mb-4">
+    <a href="{{ $section.Parent.RelPermalink }}" class="text-sm font-semibold text-slate-900 dark:text-white hover:text-accent-500 dark:hover:text-accent-400 transition-colors">
+      &larr; {{ $section.Parent.Title }}
+    </a>
+  </div>
+  <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Documentation</h3>
+  {{ range $section.Pages.ByWeight }}
+    <a href="{{ .RelPermalink }}" class="block py-1.5 px-3 text-sm rounded-md transition-colors {{ if eq $.RelPermalink .RelPermalink }}bg-accent-500/10 text-accent-600 dark:text-accent-400 font-medium{{ else }}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800{{ end }}">
+      {{ .Title }}
+    </a>
+  {{ end }}
+</nav>

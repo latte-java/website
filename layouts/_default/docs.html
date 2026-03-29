@@ -1,0 +1,63 @@
+{{ define "main" }}
+  <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Mobile docs nav toggle -->
+    <div class="md:hidden flex items-center gap-2 py-3 border-b border-slate-200 dark:border-slate-800">
+      <button type="button" id="docs-nav-toggle" class="p-2 -ml-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle navigation">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+      <span class="text-sm font-medium text-slate-900 dark:text-white">{{ .Title }}</span>
+    </div>
+
+    <div class="md:flex md:gap-8 py-8">
+      <!-- Left sidebar: docs nav -->
+      <aside id="docs-nav" class="hidden md:block md:w-64 shrink-0">
+        <div class="sticky top-24 overflow-y-auto max-h-[calc(100vh-6rem)]">
+          {{ partial "docs-nav.html" . }}
+        </div>
+      </aside>
+
+      <!-- Mobile nav overlay -->
+      <div id="docs-nav-overlay" class="hidden fixed inset-0 z-40 md:hidden">
+        <div class="absolute inset-0 bg-slate-900/50" id="docs-nav-backdrop"></div>
+        <div class="relative w-72 h-full bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 p-6 overflow-y-auto">
+          {{ partial "docs-nav.html" . }}
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <article class="min-w-0 flex-1 max-w-3xl">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-8">{{ .Title }}</h1>
+        <div class="prose dark:prose-invert prose-slate max-w-none
+          prose-headings:scroll-mt-20
+          prose-a:text-accent-500 dark:prose-a:text-accent-400
+          prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+          prose-pre:bg-slate-100 dark:prose-pre:bg-slate-800/50 prose-pre:border prose-pre:border-slate-200 dark:prose-pre:border-slate-700">
+          {{ .Content }}
+        </div>
+      </article>
+
+      <!-- Right sidebar: TOC -->
+      <aside class="hidden xl:block xl:w-56 shrink-0">
+        <div class="sticky top-24 overflow-y-auto max-h-[calc(100vh-6rem)]">
+          {{ partial "toc.html" . }}
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var toggle = document.getElementById('docs-nav-toggle');
+    var overlay = document.getElementById('docs-nav-overlay');
+    var backdrop = document.getElementById('docs-nav-backdrop');
+    if (!toggle || !overlay) return;
+
+    toggle.addEventListener('click', function() {
+      overlay.classList.toggle('hidden');
+    });
+    backdrop.addEventListener('click', function() {
+      overlay.classList.add('hidden');
+    });
+  })();
+  </script>
+{{ end }}

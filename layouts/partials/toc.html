@@ -1,0 +1,8 @@
+{{ if .TableOfContents }}
+  <nav class="space-y-2">
+    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">On this page</h3>
+    <div class="text-sm toc">
+      {{ .TableOfContents }}
+    </div>
+  </nav>
+{{ end }}
