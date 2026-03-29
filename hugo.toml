@@ -1,0 +1,55 @@
+baseURL = "https://lattejava.org/"
+languageCode = "en-us"
+title = "Latte Java"
+
+[build]
+  [build.buildStats]
+    enable = true
+
+[[build.cachebusters]]
+  source = 'assets/notwatching/hugo_stats\.json'
+  target = 'css'
+
+[[build.cachebusters]]
+  source = '(postcss|tailwind)\.config\.js'
+  target = 'css'
+
+[[module.mounts]]
+  source = 'assets'
+  target = 'assets'
+
+[[module.mounts]]
+  disableWatch = true
+  source = 'hugo_stats.json'
+  target = 'assets/notwatching/hugo_stats.json'
+
+[markup.highlight]
+  noClasses = false
+
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 4
+
+[params]
+  description = "Latte Java aims to make Java simple and easy to use"
+  github = "https://github.com/latte-java"
+
+[[menus.projects]]
+  name = "javaenv"
+  pageRef = "/javaenv"
+  weight = 10
+
+[[menus.projects]]
+  name = "cli"
+  pageRef = "/cli"
+  weight = 20
+
+[[menus.projects]]
+  name = "jwt"
+  pageRef = "/jwt"
+  weight = 30
+
+[[menus.projects]]
+  name = "http"
+  pageRef = "/http"
+  weight = 40
