@@ -26,6 +26,42 @@
   content: none;
 }
 
+/* Coming Soon ribbon */
+.ribbon-wrapper {
+  @apply absolute top-0 right-0 w-[85px] h-[88px] overflow-hidden;
+}
+
+.ribbon {
+  @apply absolute text-white text-[11px] font-semibold text-center leading-tight;
+  background-color: #f59e0b;
+  top: 19px;
+  right: -21px;
+  width: 100px;
+  padding: 7px 0;
+  transform: rotate(45deg);
+}
+
+.ribbon::before,
+.ribbon::after {
+  content: "";
+  position: absolute;
+  border-style: solid;
+  border-color: transparent;
+  bottom: -6px;
+}
+
+.ribbon::before {
+  left: 0;
+  border-width: 6px 0 0 6px;
+  border-top-color: #b45309;
+}
+
+.ribbon::after {
+  right: 0;
+  border-width: 6px 6px 0 0;
+  border-top-color: #b45309;
+}
+
 /* TOC styling */
 .toc ul {
   @apply list-none pl-0;
