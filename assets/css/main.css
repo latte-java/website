@@ -33,7 +33,7 @@
   --t: 12px;
   @apply absolute text-white text-[11px] font-semibold;
   inset: var(--t) calc(-1 * var(--f)) auto auto;
-  padding: 4px 8px var(--f) calc(8px + var(--r));
+  padding: 5px 8px calc(var(--f) + 5px) calc(8px + var(--r));
   clip-path:
     polygon(0 0, 100% 0, 100% calc(100% - var(--f)),
       calc(100% - var(--f)) 100%,
