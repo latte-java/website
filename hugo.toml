@@ -5,6 +5,9 @@ title = "Latte Java"
 [build]
   [build.buildStats]
     enable = true
+    disableClasses = false
+    disableIDs = false
+    disableTags = false
 
 [[build.cachebusters]]
   source = 'assets/notwatching/hugo_stats\.json'
@@ -31,7 +34,7 @@ title = "Latte Java"
   endLevel = 4
 
 [params]
-  description = "Latte Java aims to make Java simple and easy to use"
+  description = "The goal of the Latte project is to make Java simple and easy to use"
   github = "https://github.com/latte-java"
 
 [[menus.projects]]
