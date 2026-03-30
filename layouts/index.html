@@ -31,9 +31,13 @@
             <a href="{{ .RelPermalink }}" class="group relative block p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-accent-500 dark:hover:border-accent-400 hover:shadow-lg transition-all overflow-hidden">
               {{ if .Params.coming_soon }}
                 <div class="absolute top-0 right-0 overflow-hidden w-24 h-24">
-                  <div class="absolute top-3 -right-6 rotate-45 bg-amber-500 text-white text-[11px] font-semibold text-center py-1 pl-5 w-32 shadow-sm">
+                  <div class="absolute top-3 -right-6 rotate-45 bg-amber-500 text-white text-[11px] font-semibold text-center py-1 pl-5 w-32 shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
                     Coming Soon
                   </div>
+                  <!-- Wrap-around fold on top edge -->
+                  <div class="absolute top-[3px] right-0 w-0 h-0 border-l-[6px] border-b-[6px] border-l-transparent border-b-amber-700"></div>
+                  <!-- Wrap-around fold on right edge -->
+                  <div class="absolute top-0 right-[3px] w-0 h-0 border-t-[6px] border-l-[6px] border-t-transparent border-l-amber-700"></div>
                 </div>
               {{ end }}
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-accent-500 dark:group-hover:text-accent-400 transition-colors">{{ .Title }}</h3>
