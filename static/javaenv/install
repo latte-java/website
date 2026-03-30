@@ -14,7 +14,7 @@ mkdir -p "${BIN_DIR}"
 mkdir -p "${HOME}/.local/share/java"
 
 # If running from a local clone, copy the script; otherwise download from GitHub
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null || echo "")"
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null || echo "")"
 
 if [[ -n "${SOURCE_DIR}" && -f "${SOURCE_DIR}/javaenv" ]]; then
   echo "Installing from local source..."
