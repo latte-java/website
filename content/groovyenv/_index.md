@@ -17,6 +17,9 @@ curl -fsSL https://lattejava.org/groovyenv/install | bash
 # Install the latest Groovy 4
 groovyenv install 4
 
+# Install the latest Groovy 4.0
+groovyenv install 4.0
+
 # Install a specific version
 groovyenv install 4.0.26
 
@@ -56,7 +59,7 @@ groovyenv resolves the Groovy version using this precedence:
 2. `.groovyversion` file in the current directory (searching up the tree)
 3. `~/.groovyversion` (set by `groovyenv global`)
 
-The file can contain a full version (`4.0.26`) or just a major version (`4`). A major version resolves to the highest installed patch for that major.
+The file can contain a full version (`4.0.26`), a major.minor version (`4.0`), or just a major version (`4`). A partial version resolves to the highest installed patch that matches.
 
 ## GROOVY_HOME
 
