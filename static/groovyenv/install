@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GROOVYENV_DIR="${HOME}/.local/share/groovyenv"
+GROOVYENV_BIN="${GROOVYENV_DIR}/bin"
+BIN_DIR="${HOME}/.local/bin"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/latte-java/groovyenv/main/groovyenv"
+
+echo "Installing groovyenv..."
+
+# Create directories
+mkdir -p "${GROOVYENV_BIN}"
+mkdir -p "${BIN_DIR}"
+mkdir -p "${HOME}/.local/share/groovy"
+
+# If running from a local clone, copy the script; otherwise download from GitHub
+SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}" 2>/dev/null)" 2>/dev/null && pwd 2>/dev/null || echo "")"
+
+if [[ -n "${SOURCE_DIR}" && -f "${SOURCE_DIR}/groovyenv" ]]; then
+  echo "Installing from local source..."
+  cp "${SOURCE_DIR}/groovyenv" "${GROOVYENV_BIN}/groovyenv"
+else
+  echo "Downloading groovyenv from GitHub..."
+  if ! curl -fsSL -o "${GROOVYENV_BIN}/groovyenv" "${GITHUB_RAW_URL}"; then
+    echo "Error: Failed to download groovyenv from ${GITHUB_RAW_URL}" >&2
+    exit 1
+  fi
+fi
+
+chmod +x "${GROOVYENV_BIN}/groovyenv"
+
+# Symlink to ~/.local/bin
+ln -sf "${GROOVYENV_BIN}/groovyenv" "${BIN_DIR}/groovyenv"
+
+# Verify ~/.local/bin is in PATH
+if ! echo "${PATH}" | tr ':' '\n' | grep -qx "${BIN_DIR}"; then
+  echo ""
+  echo "WARNING: ${BIN_DIR} is not in your PATH."
+  echo "Add the following to your shell profile:"
+  echo ""
+  echo "  export PATH=\"\${HOME}/.local/bin:\${PATH}\""
+  echo ""
+fi
+
+echo "Installed groovyenv to ${GROOVYENV_BIN}/groovyenv"
+echo "Symlinked to ${BIN_DIR}/groovyenv"
+echo ""
+echo "Run 'groovyenv install <version>' to install Groovy (e.g., groovyenv install 4.0.26)"
