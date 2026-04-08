@@ -1,5 +1,5 @@
 {{ define "main" }}
-  <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Mobile docs nav toggle -->
     <div class="md:hidden flex items-center gap-2 py-3 border-b border-slate-200 dark:border-slate-800">
       <button type="button" id="docs-nav-toggle" class="p-2 -ml-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle navigation">
@@ -10,10 +10,8 @@
 
     <div class="md:flex md:gap-8 py-8">
       <!-- Left sidebar: docs nav -->
-      <aside id="docs-nav" class="hidden md:block md:w-64 shrink-0">
-        <div class="sticky top-24 overflow-y-auto max-h-[calc(100vh-6rem)]">
-          {{ partial "docs-nav.html" . }}
-        </div>
+      <aside id="docs-nav" class="hidden md:block md:w-60 shrink-0 border-r border-slate-200 dark:border-slate-800 pr-8">
+        {{ partial "docs-nav.html" . }}
       </aside>
 
       <!-- Mobile nav overlay -->
@@ -25,7 +23,7 @@
       </div>
 
       <!-- Main content -->
-      <article class="min-w-0 flex-1 max-w-3xl">
+      <article class="min-w-0 flex-1 max-w-4xl" id="docs-content">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-8">{{ .Title }}</h1>
         <div class="prose dark:prose-invert prose-slate max-w-none
           prose-headings:scroll-mt-20
@@ -56,6 +54,30 @@
     });
     backdrop.addEventListener('click', function() {
       overlay.classList.add('hidden');
+    });
+  })();
+  (function() {
+    var blocks = document.querySelectorAll('#docs-content .highlight');
+    blocks.forEach(function(block) {
+      var pre = block.querySelector('pre');
+      if (!pre) return;
+      var code = pre.querySelector('code');
+      var text = (code || pre).textContent.trim();
+      if (text.split('\n').length > 2) return;
+      block.style.position = 'relative';
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.setAttribute('aria-label', 'Copy to clipboard');
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+      btn.addEventListener('click', function() {
+        navigator.clipboard.writeText(text).then(function() {
+          btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+          setTimeout(function() {
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+          }, 2000);
+        });
+      });
+      block.appendChild(btn);
     });
   })();
   </script>

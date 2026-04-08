@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LATTE_DIR="${HOME}/.local/share/latte"
+BIN_DIR="${HOME}/.local/bin"
+GITHUB_API_URL="https://api.github.com/repos/latte-java/cli/releases/latest"
+
+echo "Installing latte..."
+
+# Determine the latest version
+echo "Fetching latest version..."
+LATEST_TAG=$(curl -fsSL "${GITHUB_API_URL}" | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+if [[ -z "${LATEST_TAG}" ]]; then
+  echo "Error: Failed to determine latest version" >&2
+  exit 1
+fi
+echo "Latest version: ${LATEST_TAG}"
+
+DOWNLOAD_URL="https://github.com/latte-java/cli/releases/download/${LATEST_TAG}/latte-${LATEST_TAG}.tar.gz"
+
+# Download the release tarball
+TMPFILE=$(mktemp)
+trap 'rm -f "${TMPFILE}"' EXIT
+
+echo "Downloading latte ${LATEST_TAG}..."
+if ! curl -fsSL -o "${TMPFILE}" "${DOWNLOAD_URL}"; then
+  echo "Error: Failed to download latte from ${DOWNLOAD_URL}" >&2
+  exit 1
+fi
+
+# Remove existing install if present
+if [[ -d "${LATTE_DIR}" ]]; then
+  echo "Removing existing installation..."
+  rm -rf "${LATTE_DIR}"
+fi
+
+# Create directories and extract
+mkdir -p "${LATTE_DIR}"
+mkdir -p "${BIN_DIR}"
+
+tar xzf "${TMPFILE}" -C "${LATTE_DIR}"
+chmod +x "${LATTE_DIR}/bin/latte"
+
+# Symlink to ~/.local/bin
+ln -sf "${LATTE_DIR}/bin/latte" "${BIN_DIR}/latte"
+
+# Verify ~/.local/bin is in PATH
+if ! echo "${PATH}" | tr ':' '\n' | grep -qx "${BIN_DIR}"; then
+  echo ""
+  echo "WARNING: ${BIN_DIR} is not in your PATH."
+  echo "Add the following to your shell profile:"
+  echo ""
+  echo "  export PATH=\"\${HOME}/.local/bin:\${PATH}\""
+  echo ""
+fi
+
+echo "Installed latte ${LATEST_TAG} to ${LATTE_DIR}"
+echo "Symlinked to ${BIN_DIR}/latte"
+echo ""
+echo "Run 'latte --help' to get started"
