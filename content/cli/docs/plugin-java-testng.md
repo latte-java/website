@@ -116,6 +116,57 @@ This configuration is the default. It ensures that the `provided`, `compile`, `r
 | transitiveGroups | The transitive dependency groups to fetch. This is only used if transitive is set to true | List\<String> | false    |
 
 
+## Modules (JPMS)
+
+The Java TestNG plugin supports running tests against projects built with the Java Platform Module System (JPMS). It works in concert with the [Java plugin](plugin-java) and mirrors the same three modes: classpath (no modules), a single module with tests patched in, and separate main and test modules.
+
+### Auto-detection
+
+Module mode is auto-detected from the presence of `module-info.java` files on disk. The check is performed lazily on the first plugin method call so that any overrides you make in `project.latte` are honored first.
+
+* If `src/main/java/module-info.java` exists, `moduleBuild` is enabled.
+* If `src/test/java/module-info.java` exists, `testModuleBuild` is enabled.
+
+You can override either flag explicitly in `project.latte`:
+
+~~~~ groovy
+javaTestNG.settings.moduleBuild = true
+javaTestNG.settings.testModuleBuild = false
+~~~~
+
+`testModuleBuild = true` requires `moduleBuild = true`. Enabling the test module without the main module will cause `test()` to fail with an error.
+
+TestNG 7 and later ship with `Automatic-Module-Name: org.testng` in their JAR manifests, so TestNG resolves as an automatic module on the module path. Make sure you are using a TestNG version that supports this.
+
+### Module mode (patched tests)
+
+When `moduleBuild` is `true` and `testModuleBuild` is `false`, tests are executed by patching the compiled test classes into the main module. Main dependencies and the main publication JAR(s) are placed on `--module-path`; test-only dependencies (for example TestNG itself) are placed on `-classpath` (the unnamed module). The plugin automatically adds:
+
+* `--add-modules <mainModule>` to resolve the main module,
+* `--patch-module <mainModule>=<testJars>` to merge the test classes into the main module,
+* `--add-reads <mainModule>=ALL-UNNAMED` so the patched tests can see classes on the classpath, and
+* `--add-opens <mainModule>/<pkg>=ALL-UNNAMED` for every package in the test JARs so TestNG can reflectively invoke the test methods.
+
+In this mode you do not write a test `module-info.java` — the tests adopt the main module's identity.
+
+### Separate test module
+
+When both `moduleBuild` and `testModuleBuild` are `true`, tests are executed as an independent JPMS module. The main publication JAR(s), the test publication JAR(s), and all dependencies (main and test) are placed on `--module-path`. No patching or reads-injection is performed; the test module's descriptor is authoritative.
+
+TestNG itself is invoked via `--module org.testng/org.testng.TestNG`, and `--add-modules ALL-MODULE-PATH,<testModule>` is added so that automatic modules such as `slf4j` (which TestNG depends on) and the test module are resolved.
+
+Because the plugin does not emit `--add-opens`, the test `module-info.java` must declare which packages TestNG is allowed to reflect into. A typical descriptor looks like this:
+
+~~~~ java
+module org.example.tests {
+  requires org.example;
+  requires org.testng;
+  opens org.example.tests to org.testng;
+}
+~~~~
+
+Every package that contains `@Test` methods must be opened to `org.testng`. If TestNG cannot access a test class at runtime, it is almost always because of a missing `opens` directive.
+
 ## Executing tests
 
 This plugin provides a single method to run the tests. Here is an example of calling this method:

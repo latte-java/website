@@ -156,6 +156,79 @@ java.settings.jarManifest = [
 ]
 ~~~~ 
 
+## Modules (JPMS)
+
+The Java plugin has full support for the Java Platform Module System (JPMS). It can build a project as a classic classpath-based project, as a single module, or as two separate modules (one for main, one for tests).
+
+### Auto-detection
+
+Module mode is auto-detected from the presence of `module-info.java` files on disk. The check is performed lazily on the first plugin method call so that any overrides you make in `project.latte` are honored first.
+
+* If `src/main/java/module-info.java` exists, `moduleBuild` is enabled.
+* If `src/test/java/module-info.java` exists, `testModuleBuild` is enabled.
+
+You don't normally need to configure anything — just add the appropriate `module-info.java` files and the plugin switches modes automatically. If you want to force a behavior (for example, to temporarily disable module mode for an incremental migration), you can set the flags explicitly:
+
+~~~~ groovy
+java.settings.moduleBuild = true
+java.settings.testModuleBuild = false
+~~~~
+
+`testModuleBuild = true` requires `moduleBuild = true`. If you enable the test module without the main module, `compileTest()` will fail with an error.
+
+### Module mode (patched tests)
+
+When `moduleBuild` is `true` and `testModuleBuild` is `false`, the main source tree is compiled as a JPMS module (Latte uses `--module-path` for main compilation, and `javadoc` is invoked with `--module <moduleName>`). Test sources are compiled using `--patch-module`, which injects them into the main module so they can access package-private classes. Test-only dependencies (such as TestNG) remain on the classic `-classpath` (the unnamed module), and `--add-reads <mainModule>=ALL-UNNAMED` is added automatically so the patched test classes can see them.
+
+The project layout for this mode is:
+
+~~~~
+project
+   |- src/main/java
+   |       |- module-info.java          <- Declares the main module
+   |       |- org/example/...           <- Main Java sources
+   |
+   |- src/test/java
+   |       |- org/example/...           <- Test Java sources (patched into the main module)
+~~~~
+
+There is no test `module-info.java` in this layout. The test classes inherit the main module's identity and therefore have full access to its internals.
+
+### Separate test module
+
+When both `moduleBuild` and `testModuleBuild` are `true`, the test tree is compiled as an independent JPMS module with its own `module-info.java`. The test module must declare `requires` for the main module and for any test-only dependencies it uses. No `--patch-module` or `--add-reads` is used — the test module's descriptor is authoritative.
+
+The project layout for this mode is:
+
+~~~~
+project
+   |- src/main/java
+   |       |- module-info.java          <- Main module descriptor
+   |       |- org/example/...
+   |
+   |- src/test/java
+   |       |- module-info.java          <- Test module descriptor (requires main + testng)
+   |       |- org/example/tests/...
+~~~~
+
+A typical test `module-info.java` looks like this:
+
+~~~~ java
+module org.example.tests {
+  requires org.example;
+  requires org.testng;
+  opens org.example.tests to org.testng;
+}
+~~~~
+
+The `opens ... to org.testng` directive is required so that TestNG can reflectively discover and invoke the test methods when the tests are executed by the Java TestNG plugin.
+
+During test compilation, the main build directory is placed on `--module-path` so the test module can resolve `requires <mainModule>`. The test build directory is intentionally kept off the module path during compilation to avoid the in-progress module conflicting with the module being compiled.
+
+### JARs and Javadoc
+
+When `moduleBuild` is enabled, the `module-info.class` produced by the compiler is included in the main JAR created by `jar()`. When `testModuleBuild` is enabled, the test JAR similarly contains its own `module-info.class`. The `document()` method automatically switches to module-aware Javadoc generation by passing `--module <moduleName>` to `javadoc`.
+
 ## Compiling
 
 The `compile` method on the Java plugin allows you to compile the Java source files. This compiles both the main and test source files in the project. It also copies the main and test resource files to the build directory. Here's an example of calling this method:
