@@ -8,16 +8,26 @@ plugin: true
 
 ## Overview
 
-The Release Git plugin allows you to perform a full release of a project stored in a Git repository. This plugin has no settings. Everything required to release a Git project comes from the `.git` directory or the project file.
+The Release Git plugin allows you to perform a full release of a project stored in a Git repository. Most of what the plugin needs comes from the `.git` directory or the project file; it has a single optional setting for customizing the tag name.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-release = loadPlugin(id: "org.lattejava.plugin:release-git:0.1.0")
+release = loadPlugin(id: "org.lattejava.plugin:release-git:0.1.5")
+~~~~ 
+
+## Settings
+
+### Tag name
+
+By default, the Git tag created for a release is the project version (e.g. `1.0.8`). You can override this with the `tag` setting to add a prefix or suffix:
+
+~~~~ groovy
+release.settings.tag = "v${project.version}"
 ~~~~ 
 
 ## The release process

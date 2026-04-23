@@ -123,7 +123,7 @@ import org.lattejava.plugin.groovy.BaseGroovyPlugin
 
 class MyPlugin extends BaseGroovyPlugin {
   MyPlugin(project, output) {
-    super(project output)
+    super(project, output)
   }
 }
 ~~~~ 
@@ -153,7 +153,7 @@ class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
   MyPlugin(project, output) {
-    super(project output)
+    super(project, output)
   }
 }
 ~~~~ 
@@ -172,7 +172,7 @@ class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
   MyPlugin(project, output) {
-    super(project output)
+    super(project, output)
   }
 
   def createFile() {
@@ -188,7 +188,7 @@ Now we need to test our plugin. Create the Groovy class `src/test/groovy/com/myc
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.domain.Project
+import org.lattejava.cli.domain.Project
 import org.lattejava.output.Output
 import org.lattejava.output.SystemOutOutput
 import org.testng.annotations.Test
@@ -201,10 +201,10 @@ import static org.testng.Assert.*
 class MyPluginTest {
   @Test
   def test() {
-    Project project = new Project(Paths.get("build/test"), output)
     Output output = new SystemOutOutput(false)
+    Project project = new Project(Paths.get("build/test"), output)
     MyPlugin myPlugin = new MyPlugin(project, output)
-    plugin.createFile()
+    myPlugin.createFile()
 
     def bytes = Files.readAllBytes(Paths.get("build/test/foobar.txt"))
     assertEquals(new String(bytes), "Hello World")

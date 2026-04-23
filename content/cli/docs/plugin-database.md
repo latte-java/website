@@ -10,14 +10,14 @@ plugin: true
 
 The Latte Database Plugin provides the ability to work with databases.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-database = loadPlugin(id: "org.lattejava.plugin:database:0.1.0")
+database = loadPlugin(id: "org.lattejava.plugin:database:0.1.5")
 ~~~~ 
 
 ## Configuring the plugin
@@ -42,7 +42,7 @@ You can change the name of the database that the plugin uses. This is specified 
 database.settings.name = "foobar"
 ~~~~ 
 
-This will cause the plugin to use the `foobar` database. The default for the name of the database is constructed using the project name. However, any dashes in the project name are replaced with underscores. For example, if your project name is `my-project` the database name will be `my_project`.
+This will cause the plugin to use the `foobar` database. The default for the name of the database is constructed using the project name. Dashes and dots in the project name are replaced with underscores. For example, if your project name is `my-project` the database name will be `my_project`, and if it is `com.example.app` it will be `com_example_app`.
 
 ### Host
 

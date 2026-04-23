@@ -10,14 +10,14 @@ plugin: true
 
 The Java plugin allows you to build Java projects. This plugin includes methods for compiling, JARring, and cleaning a Java project.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.6**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-java = loadPlugin(id: "org.lattejava.plugin:java:0.1.0")
+java = loadPlugin(id: "org.lattejava.plugin:java:0.1.6")
 ~~~~ 
 
 ## Layout
@@ -94,14 +94,6 @@ You can specify additional parameters to the Javadoc generator using the `docArg
 java.settings.docArguments = "-footer '<span>Copyright 2014 My Company</span>'"
 ~~~~ 
 
-### JVM arguments
-
-You can specify additional JVM arguments when running Java tools using the `jvmArguments` field on the settings class. Here is an example:
-
-~~~~ groovy
-java.settings.jvmArguments = "-Xmx512m"
-~~~~
-
 ### Additional library directories
 
 In some cases, you don't have access to a Latte repository that contains certain JAR files that you need for compilation. The best practice is to add the missing JAR files to a Latte repository and use Latte's dependency management system to manage them. However, some third party JAR files might have unknown transitive dependencies. Rather than trying to figure out all of these complex dependencies, Latte provides you with a simple way to include additional JARs in the compile time classpath. You can specify one or more directories that contain JAR files, and Latte will include all the JAR files in the classpath. Here is an example:
@@ -135,26 +127,6 @@ This defines that the project's `compile` and `provided` dependency groups shoul
 | transitive       | Determines if transitive dependencies are included or not                                 | boolean       | true     |
 | fetchSource      | Determines if the source for the dependencies or downloaded or not                        | boolean       | true     |
 | transitiveGroups | The transitive dependency groups to fetch. This is only used if transitive is set to true | List\<String> | false    |
-
-### JAR manifest
-
-You can control the manifest attributes for the JAR file that the Java plugin builds for your project. This plugin ensures that these manifest attributes are always set:
-
-* Manifest-Version - this is set to `1.0`
-* Implementation-Version - this is set to the project version
-* Implementation-Vendor - this is set to the group and name of the project concatenated together with a dot separator
-* Specification-Version - this is set to the project version
-* Specification-Vendor - this is set to the group and name of the project concatenated together with a dot separator
-
-Here is an example of setting additional manifest attributes or overriding the defaults listed above:
-
-~~~~ groovy
-java.settings.jarManifest = [
-    "Implementation-Vendor": "My Company",
-    "Specification-Vendor": "My Company",
-    "Main-Class": "com.mycompany.Main"
-]
-~~~~ 
 
 ## Modules (JPMS)
 
@@ -254,7 +226,7 @@ java.document()
 
 ## JARring
 
-The `jar` method on the Java plugin allows you to build the project JAR files. This produces three JAR files, the main JAR, the test JAR, and a sources JAR file. The main JAR contains all the files from the `build/classes/main` directory. The test JAR file contains all the files from the `build/classes/test` directory. And the source JAR file contains the source files from the `src/java/main` directory. Here is an example of using this method.
+The `jar` method on the Java plugin allows you to build the project JAR files. This produces four JAR files: the main JAR, the main source JAR, the test JAR, and the test source JAR. The main JAR contains the compiled files from the `build/classes/main` directory; the main source JAR contains the source files from `src/main/java` along with the main resources; the test JAR contains the compiled files from `build/classes/test`; and the test source JAR contains the source files from `src/test/java` along with the test resources. Here is an example of using this method.
 
 ~~~~ groovy
 java.jar()

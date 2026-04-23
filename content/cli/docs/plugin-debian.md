@@ -10,14 +10,14 @@ plugin: true
 
 The Latte Debian Package Management Plugin provides the ability to build Debian package files (.deb).
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-deb = loadPlugin(id: "org.lattejava.plugin:deb:0.1.0")
+deb = loadPlugin(id: "org.lattejava.plugin:debian:0.1.5")
 ~~~~ 
 
 ## Building a Debian package
@@ -42,7 +42,7 @@ The `build` method on the plugin allows you to build Debian package files. There
 | provides     | The features this package provides                   | String         | false    |
 | recommends   | The list of packages this package recommends         | String         | false    |
 | replaces     | The package(s) this package replaces                 | String         | false    |
-| section      | The section of the package                           | String         | false    |
+| section      | The section of the package                           | String         | true     |
 | suggests     | The package(s) this package suggests                 | String         | false    |
 
 For more information on these parameters, consult the Debian package documentation here: https://www.debian.org/doc/manuals/debian-faq/ch-pkg_basics.en.html
@@ -143,7 +143,7 @@ The `version` method defines the version of the package. It takes these paramete
 | name     | description                          | type   | required |
 |----------|--------------------------------------|--------|----------|
 | upstream | The upstream version of the package. | String | true     |
-| debian   | The Debian version of the package.   | String | true     |
+| debian   | The Debian version of the package.   | String | false    |
 
 Here is an example of using this method:
 
