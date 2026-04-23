@@ -10,14 +10,14 @@ plugin: true
 
 The Linter plugin runs static analysis tools on your project's source code. Currently, it supports PMD for Java projects.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-linter = loadPlugin(id: "org.lattejava.plugin:linter:0.1.0")
+linter = loadPlugin(id: "org.lattejava.plugin:linter:0.1.5")
 ~~~~
 
 ## Settings

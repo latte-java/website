@@ -112,18 +112,21 @@ class MyPlugin implements Plugin {
 }
 ~~~~ 
 
-If you want to get some extra helper methods for your plugin, you can extend `org.lattejava.plugin.groovy.BaseGroovyPlugin`, but this isn't required.
+If you want to get some extra helper methods for your plugin, you can extend `org.lattejava.cli.plugin.groovy.BaseGroovyPlugin`, but this isn't required.
 
-Your plugin class must have a constructor that takes the `Project` and `Output` objects like this:
+Your plugin class must have a constructor that takes the `Project`, `RuntimeConfiguration`, and `Output` objects — Latte uses reflection to find that exact three-argument constructor when it loads your plugin, so skipping an argument will bite you at load time:
 
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
-  MyPlugin(project, output) {
-    super(project output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 }
 ~~~~ 
@@ -147,13 +150,16 @@ Now let's add the settings object to our plugin:
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
-  MyPlugin(project, output) {
-    super(project output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 }
 ~~~~ 
@@ -166,13 +172,17 @@ Lastly, you can define any number of public methods on your plugin. Each plugin 
 package com.mycompany
 
 import java.nio.file.Files
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
-  MyPlugin(project, output) {
-    super(project output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 
   def createFile() {
@@ -188,7 +198,8 @@ Now we need to test our plugin. Create the Groovy class `src/test/groovy/com/myc
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.domain.Project
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.runtime.RuntimeConfiguration
 import org.lattejava.output.Output
 import org.lattejava.output.SystemOutOutput
 import org.testng.annotations.Test
@@ -201,10 +212,11 @@ import static org.testng.Assert.*
 class MyPluginTest {
   @Test
   def test() {
-    Project project = new Project(Paths.get("build/test"), output)
     Output output = new SystemOutOutput(false)
-    MyPlugin myPlugin = new MyPlugin(project, output)
-    plugin.createFile()
+    Project project = new Project(Paths.get("build/test"), output)
+    RuntimeConfiguration runtimeConfiguration = new RuntimeConfiguration()
+    MyPlugin myPlugin = new MyPlugin(project, runtimeConfiguration, output)
+    myPlugin.createFile()
 
     def bytes = Files.readAllBytes(Paths.get("build/test/foobar.txt"))
     assertEquals(new String(bytes), "Hello World")
@@ -228,7 +240,17 @@ groovy.settings.jarManifest = [
 ]
 ~~~~ 
 
-Latte uses the entry named `Latte-Plugin-Class` in the MANIFEST.MF file to load the plugin. You'll need to set this to point to your plugin class.
+This writes a `Latte-Plugin-Class` entry into the plugin JAR's `META-INF/MANIFEST.MF`. When a project calls `loadPlugin(...)`, Latte opens the resolved plugin JAR, reads this manifest entry, and uses the value as the fully-qualified class name to instantiate. The class must have a public three-argument constructor `(Project, RuntimeConfiguration, Output)` — Latte looks up that exact signature via reflection.
+
+If the manifest entry is missing, Latte fails plugin loading with an error like:
+
+~~~~ 
+Invalid plugin [...]. The JAR file does not contain a valid Manifest entry for Latte-Plugin-Class
+~~~~ 
+
+If the entry points at a class that does not exist in the JAR, or at a class without the required constructor, you will see a corresponding `ClassNotFoundException` or `NoSuchMethodException` message. In all cases the build fails before any plugin code runs.
+
+Every plugin JAR you publish **must** set this manifest entry. If you are writing a Java plugin (rather than Groovy), the Java plugin does not currently expose a `jarManifest` setting, so set the entry through whatever JAR-building step you use to produce the plugin artifact.
 
 ## Integrating
 

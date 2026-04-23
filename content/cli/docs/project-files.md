@@ -69,11 +69,11 @@ Next, let's add some build targets to our project. The first target we need to a
 Plugins are dependencies just like the project dependencies we added above. However, they are not included in a dependency group, instead, we simply define the plugin dependency using the _loadPlugin_ directive. Here is how we include the Java plugin in our project file:
 
 ~~~~ groovy
-java = loadPlugin(id: "org.lattejava.plugin:java:2.0.1")
+java = loadPlugin(id: "org.lattejava.plugin:java:0.1.0")
 ~~~~ 
 
 _Notice that this looks very similar to a normal dependency declaration, we have only changed *dependency* to *loadPlugin*._
-This directive loads the Java plugin version 2.0.1 and the plugin reference is assigned to a variable named 'java'. Now that we have loaded the plugin, we need to configure it. The Java plugin requires us to define the JDK we are using to compile. We'll start by setting the java version using the settings of the plugin like this:
+This directive loads the Java plugin version 0.1.0 and the plugin reference is assigned to a variable named 'java'. Now that we have loaded the plugin, we need to configure it. The Java plugin requires us to define the JDK we are using to compile. We'll start by setting the java version using the settings of the plugin like this:
 
 ~~~~ groovy
 java.settings.javaVersion = "17"

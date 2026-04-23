@@ -10,14 +10,14 @@ plugin: true
 
 The POM plugin generates and updates Maven `pom.xml` files from your Latte project's dependencies. This is useful when you need to publish your project to a Maven repository or provide Maven compatibility.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-pom = loadPlugin(id: "org.lattejava.plugin:pom:0.1.0")
+pom = loadPlugin(id: "org.lattejava.plugin:pom:0.1.5")
 ~~~~
 
 ## Settings

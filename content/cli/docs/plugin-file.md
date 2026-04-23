@@ -10,14 +10,14 @@ plugin: true
 
 The file plugin provides a number of methods that help you deal with files and archives.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.5**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-file = loadPlugin(id: "org.lattejava.plugin:file:0.1.0")
+file = loadPlugin(id: "org.lattejava.plugin:file:0.1.5")
 ~~~~ 
 
 ## FileSets
@@ -256,10 +256,12 @@ file.unjar(file: "build/jars/foobar.jar", to: "build/output")
 
 The `untar` method allows you to extract a TAR file. This method takes these parameters:
 
-| name | description                               | type           | required |
-|------|-------------------------------------------|----------------|----------|
-| file | The TAR file to extract.                  | String or Path | true     |
-| to   | The directory to extract the TAR file to. | String or Path | true     |
+| name     | description                                                                          | type           | required |
+|----------|--------------------------------------------------------------------------------------|----------------|----------|
+| file     | The TAR file to extract.                                                             | String or Path | true     |
+| to       | The directory to extract the TAR file to.                                            | String or Path | true     |
+| useGroup | Preserve the group ownership recorded in the TAR entries. Defaults to `false`.       | boolean        | false    |
+| useOwner | Preserve the owner recorded in the TAR entries. Defaults to `false`.                 | boolean        | false    |
 
 Here is an example of calling this method:
 

@@ -8,16 +8,16 @@ plugin: true
 
 ## Overview
 
-The Java TestNG plugin allows you to execute TestNG tests in a Java project.
+The Java TestNG plugin allows you to execute TestNG tests in a Java project. It is designed to work alongside the [Java plugin](plugin-java), which compiles and packages the sources that this plugin runs tests against. The layout, JPMS detection, and source directories described here mirror the Java plugin and share the same defaults.
 
-**LATEST VERSION: 0.1.0**
+**LATEST VERSION: 0.1.6**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-javaTestNG = loadPlugin(id: "org.lattejava.plugin:java-testng:0.1.0")
+javaTestNG = loadPlugin(id: "org.lattejava.plugin:java-testng:0.1.6")
 ~~~~ 
 
 ## Settings
@@ -72,7 +72,7 @@ The Java TestNG plugin has built-in support for JaCoCo code coverage. Enable it 
 javaTestNG.settings.codeCoverage = true
 ~~~~
 
-When enabled, JaCoCo will instrument the test execution and produce a coverage report.
+When enabled, JaCoCo instruments the test execution via a `-javaagent` argument, writing raw coverage data to `build/jacoco.exec`. After tests complete, the plugin generates an HTML coverage report in `build/coverage-reports/`. Only the JARs in the `main` publication group are analyzed — test classes and dependencies are excluded from the report.
 
 ### Verbosity
 
@@ -86,7 +86,7 @@ The value is an integer where higher values mean more verbosity.
 
 ### Report output directory
 
-The directory that the test reports are output to can be changed using the `reportDirectory` field on the settings class. Here is an example:
+The directory that the test reports are output to can be changed using the `reportDirectory` field on the settings class. The default is `build/test-reports`. Here is an example:
 
 ~~~~ groovy
 javaTestNG.settings.reportDirectory = Paths.get("build/reports/tests")
@@ -98,11 +98,11 @@ You can configure the dependencies that are included when TestNG is run using th
 
 ~~~~ groovy
 javaTestNG.settings.dependencies = [
-    [group: "provided", transitive: true, fetchSource: false],
-    [group: "compile", transitive: true, fetchSource: false],
-    [group: "runtime", transitive: true, fetchSource: false],
-    [group: "test-compile", transitive: true, fetchSource: false],
-    [group: "test-runtime", transitive: true, fetchSource: false]
+    [group: "provided", transitive: true, fetchSource: false, transitiveGroups: ["provided", "compile", "runtime"]],
+    [group: "compile", transitive: true, fetchSource: false, transitiveGroups: ["provided", "compile", "runtime"]],
+    [group: "runtime", transitive: true, fetchSource: false, transitiveGroups: ["provided", "compile", "runtime"]],
+    [group: "test-compile", transitive: true, fetchSource: false, transitiveGroups: ["provided", "compile", "runtime"]],
+    [group: "test-runtime", transitive: true, fetchSource: false, transitiveGroups: ["provided", "compile", "runtime"]]
   ]
 ~~~~ 
 
@@ -199,11 +199,15 @@ You can optionally provide a fully qualified test name if you have more than one
 $ latte test --test=org.lattejava.action.FooBarTest
 ~~~~
 
-You can optionally run only tests that failed from the last execution. This uses the test output from the previous run to determine which tests failed. If you perform a `clean`, this will not work. 
+Values passed to `--test` are first matched against the simple class name and the fully-qualified class name exactly. If no exact match is found, the plugin falls back to a substring match against the class path, so `--test=FooBar` would also run `FooBarOtherTest`, `FooBarIntegrationTest`, etc.
+
+You can optionally run only tests that failed from the last execution:
 
 ~~~~ shell
 $ latte test --onlyFailed
 ~~~~
+
+When a test run fails, the plugin preserves `testng-failed.xml` to a location under the system temp directory (`${java.io.tmpdir}/<project-name>/test-reports/last/testng-failed.xml`). `--onlyFailed` hands that file directly to TestNG on the next run, ignoring `groups`/`exclude` attributes. Because the preserved file lives outside the project, running `clean` does **not** invalidate it. The file persists until the OS clears its temp directory (for example, on reboot on some systems). If no preserved file exists, the plugin logs a message and returns without running any tests.
 
 You can skip all the tests in a project using the command-line switch:
 
@@ -211,20 +215,38 @@ You can skip all the tests in a project using the command-line switch:
 $ latte test --skipTests
 ~~~~
 
-You can run only tests that have changed since the last build:
+You can run only tests that have changed on the current branch or pull request:
 
 ~~~~ shell
 $ latte test --onlyChanges
 ~~~~
 
-You can run only tests that have changed since a specific commit:
+The plugin determines the changed file set by trying `gh pr diff --name-only` first, and falling back to `git diff --no-merges origin..HEAD` if the `gh` CLI is unavailable or the branch is not a pull request. Uncommitted changes (`git diff -u --name-only HEAD`) are always included on top of that. The matcher only inspects `src/main/java/**/*.java` and `src/test/java/**/*Test.java` — changes to files outside those locations are ignored, and changes in upstream dependencies are not considered. For a main-source file, the corresponding `*Test.java` is run if it exists.
+
+Two edges are worth knowing about:
+
+* **Changes to `project.latte` are invisible to the matcher.** Bumping a dependency version, upgrading a plugin, or editing a build target does not cause any tests to run under `--onlyChanges` — no `.java` file changed. After changing `project.latte` (or anything else outside `src/main/java` / `src/test/java`), run `latte test` at least once without the flag.
+* **If no tests match, the build fails.** The plugin logs `Found [0] tests to run from changed files`, hands an empty suite to TestNG, and TestNG's non-zero exit is surfaced as a build failure (see [TestNG exit codes](#testng-exit-codes) below). If you are running `--onlyChanges` in CI as your only test step, pair it with a full `latte test` run earlier in the pipeline, or gate the `--onlyChanges` step on there being relevant changes.
+
+You can also specify an explicit commit or commit range to diff against instead of the default branch logic:
 
 ~~~~ shell
-$ latte test --commitRange=HEAD~3  # Run tests affected by changes in the last 3 commits
+$ latte test --onlyChanges --commitRange=HEAD~3  # Run tests affected by changes in the last 3 commits
 ~~~~
 
 You can keep the generated TestNG XML file after execution:
 
 ~~~~ shell
-$ latte test --keepXML             # Keep the generated TestNG XML file after execution
+$ latte test --keepXML
 ~~~~
+
+The file is copied to `build/test/<generated-name>.xml` in the project directory, which is useful for importing the suite definition into IntelliJ or re-running it with TestNG directly.
+
+### TestNG exit codes
+
+The plugin interprets the TestNG process exit code as follows:
+
+* `0` — all tests passed; the build continues.
+* `2` — some tests were skipped but none failed; a message is logged and the build continues.
+* `1` — one or more tests failed; `testng-results.xml` and `testng-failed.xml` are preserved to the temp directory and the build fails.
+* anything else — treated as a configuration or unknown error; preserved files are written if present and the build fails.
