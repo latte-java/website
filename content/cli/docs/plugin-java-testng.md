@@ -8,7 +8,7 @@ plugin: true
 
 ## Overview
 
-The Java TestNG plugin allows you to execute TestNG tests in a Java project.
+The Java TestNG plugin allows you to execute TestNG tests in a Java project. It is designed to work alongside the [Java plugin](plugin-java), which compiles and packages the sources that this plugin runs tests against. The layout, JPMS detection, and source directories described here mirror the Java plugin and share the same defaults.
 
 **LATEST VERSION: 0.1.6**
 
@@ -222,6 +222,11 @@ $ latte test --onlyChanges
 ~~~~
 
 The plugin determines the changed file set by trying `gh pr diff --name-only` first, and falling back to `git diff --no-merges origin..HEAD` if the `gh` CLI is unavailable or the branch is not a pull request. Uncommitted changes (`git diff -u --name-only HEAD`) are always included on top of that. The matcher only inspects `src/main/java/**/*.java` and `src/test/java/**/*Test.java` — changes to files outside those locations are ignored, and changes in upstream dependencies are not considered. For a main-source file, the corresponding `*Test.java` is run if it exists.
+
+Two edges are worth knowing about:
+
+* **Changes to `project.latte` are invisible to the matcher.** Bumping a dependency version, upgrading a plugin, or editing a build target does not cause any tests to run under `--onlyChanges` — no `.java` file changed. After changing `project.latte` (or anything else outside `src/main/java` / `src/test/java`), run `latte test` at least once without the flag.
+* **If no tests match, the build still passes.** The plugin logs `Found [0] tests to run from changed files` and exits successfully. This matches the default behavior of Maven Surefire (`failIfNoTests=false`); it differs from Gradle, which fails when a test filter matches nothing. If you are running `--onlyChanges` in CI as your only test step, pair it with a full `latte test` run earlier in the pipeline.
 
 You can also specify an explicit commit or commit range to diff against instead of the default branch logic:
 

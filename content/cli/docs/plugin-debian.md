@@ -45,6 +45,8 @@ The `build` method on the plugin allows you to build Debian package files. There
 | section      | The section of the package                           | String         | true     |
 | suggests     | The package(s) this package suggests                 | String         | false    |
 
+The value supplied for `section` must be one of the [valid Debian sections](https://www.debian.org/doc/debian-policy/ch-archive.html#sections) (for example `admin`, `devel`, `net`, `web`). The plugin validates this at build time and fails the build if the value is not recognized.
+
 For more information on these parameters, consult the Debian package documentation here: https://www.debian.org/doc/manuals/debian-faq/ch-pkg_basics.en.html
 
 ### Configuration files
@@ -143,7 +145,7 @@ The `version` method defines the version of the package. It takes these paramete
 | name     | description                          | type   | required |
 |----------|--------------------------------------|--------|----------|
 | upstream | The upstream version of the package. | String | true     |
-| debian   | The Debian version of the package.   | String | false    |
+| debian   | The Debian version of the package.   | String | true     |
 
 Here is an example of using this method:
 

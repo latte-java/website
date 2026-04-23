@@ -240,7 +240,17 @@ groovy.settings.jarManifest = [
 ]
 ~~~~ 
 
-Latte uses the entry named `Latte-Plugin-Class` in the MANIFEST.MF file to load the plugin. You'll need to set this to point to your plugin class.
+This writes a `Latte-Plugin-Class` entry into the plugin JAR's `META-INF/MANIFEST.MF`. When a project calls `loadPlugin(...)`, Latte opens the resolved plugin JAR, reads this manifest entry, and uses the value as the fully-qualified class name to instantiate. The class must have a public three-argument constructor `(Project, RuntimeConfiguration, Output)` — Latte looks up that exact signature via reflection.
+
+If the manifest entry is missing, Latte fails plugin loading with an error like:
+
+~~~~ 
+Invalid plugin [...]. The JAR file does not contain a valid Manifest entry for Latte-Plugin-Class
+~~~~ 
+
+If the entry points at a class that does not exist in the JAR, or at a class without the required constructor, you will see a corresponding `ClassNotFoundException` or `NoSuchMethodException` message. In all cases the build fails before any plugin code runs.
+
+Every plugin JAR you publish **must** set this manifest entry. If you are writing a Java plugin (rather than Groovy), the Java plugin does not currently expose a `jarManifest` setting, so set the entry through whatever JAR-building step you use to produce the plugin artifact.
 
 ## Integrating
 
