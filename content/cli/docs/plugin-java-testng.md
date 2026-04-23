@@ -226,7 +226,7 @@ The plugin determines the changed file set by trying `gh pr diff --name-only` fi
 Two edges are worth knowing about:
 
 * **Changes to `project.latte` are invisible to the matcher.** Bumping a dependency version, upgrading a plugin, or editing a build target does not cause any tests to run under `--onlyChanges` — no `.java` file changed. After changing `project.latte` (or anything else outside `src/main/java` / `src/test/java`), run `latte test` at least once without the flag.
-* **If no tests match, the build still passes.** The plugin logs `Found [0] tests to run from changed files` and exits successfully. This matches the default behavior of Maven Surefire (`failIfNoTests=false`); it differs from Gradle, which fails when a test filter matches nothing. If you are running `--onlyChanges` in CI as your only test step, pair it with a full `latte test` run earlier in the pipeline.
+* **If no tests match, the build fails.** The plugin logs `Found [0] tests to run from changed files`, hands an empty suite to TestNG, and TestNG's non-zero exit is surfaced as a build failure (see [TestNG exit codes](#testng-exit-codes) below). If you are running `--onlyChanges` in CI as your only test step, pair it with a full `latte test` run earlier in the pipeline, or gate the `--onlyChanges` step on there being relevant changes.
 
 You can also specify an explicit commit or commit range to diff against instead of the default branch logic:
 
@@ -248,5 +248,5 @@ The plugin interprets the TestNG process exit code as follows:
 
 * `0` — all tests passed; the build continues.
 * `2` — some tests were skipped but none failed; a message is logged and the build continues.
-* `1` — one or more tests failed; `testng-results.xml` and `testng-failed.xml` are preserved to the temp directory (for `--onlyFailed`) and the build fails.
+* `1` — one or more tests failed; `testng-results.xml` and `testng-failed.xml` are preserved to the temp directory and the build fails.
 * anything else — treated as a configuration or unknown error; preserved files are written if present and the build fails.

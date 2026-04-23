@@ -42,7 +42,7 @@ You can change the name of the database that the plugin uses. This is specified 
 database.settings.name = "foobar"
 ~~~~ 
 
-This will cause the plugin to use the `foobar` database. The default for the name of the database is constructed using the project name. Dashes and dots in the project name are replaced with underscores. For example, if your project name is `my-project` the database name will be `my_project`, and if it is `com.example.app` it will be `com_example_app`.
+This will cause the plugin to use the `foobar` database. The default for the name of the database is constructed from the project name with dashes replaced by underscores. For example, if your project name is `my-project` the database name will be `my_project`. Dots in the project name are **not** replaced by the default, so a project named `com.example.app` gets a default `settings.name` of `com.example.app` — this is accepted by MySQL and PostgreSQL, but if you'd rather have underscores, set `settings.name` explicitly or use `createMainDatabase()` / `createTestDatabase()` (see below), both of which replace `.` with `_`.
 
 ### Host
 
@@ -122,9 +122,9 @@ The `createDatabase`, `createMainDatabase` and `createTestDatabase` methods on t
 
 The `createDatabase` method creates a database using the `name` setting.
 
-The `createTestDatabase` creates a database using the project name appended with `_test` as the database name by first updating the settings object with this calculated name and then calling `createDatabase()`. For example, if your project is named `foo-bar` this will create a database named `foo_bar_test`.
+The `createTestDatabase` creates a database using the project name appended with `_test` as the database name by first updating the settings object with this calculated name and then calling `createDatabase()`. Both dashes and dots in the project name are replaced with underscores. For example, if your project is named `foo-bar` this will create a database named `foo_bar_test`, and if it is named `com.example.app` it will create `com_example_app_test`.
 
-The `createMainDatabase` creates a database using the project name as the database name by first updating the settings object with this calculated name and then calling `createDatabase()`. For example, if your project is named `foo-bar` this will create a database named `foo_bar`.
+The `createMainDatabase` creates a database using the project name as the database name by first updating the settings object with this calculated name and then calling `createDatabase()`. Both dashes and dots in the project name are replaced with underscores. For example, if your project is named `foo-bar` this will create a database named `foo_bar`, and if it is named `com.example.app` it will create `com_example_app`.
 
 Here is how you call these methods:
 
