@@ -46,3 +46,5 @@ Test it out:
 ~~~~ bash
 $ latte --version
 ~~~~
+
+For the full list of global flags, see [CLI Flags](../cli-flags/). For the built-in commands (`init`, `install`, `upgrade`), see [CLI Commands](../cli-commands/).

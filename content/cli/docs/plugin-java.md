@@ -198,6 +198,90 @@ The `opens ... to org.testng` directive is required so that TestNG can reflectiv
 
 During test compilation, the main build directory is placed on `--module-path` so the test module can resolve `requires <mainModule>`. The test build directory is intentionally kept off the module path during compilation to avoid the in-progress module conflicting with the module being compiled.
 
+#### Test packages must differ from main packages
+
+JPMS forbids two modules from declaring the same package. Because the test module is a *separate* module, its classes have to live in different packages from the main module. A common convention is to append `.tests` to the package names — for example, main code in `org.example` with tests in `org.example.tests`.
+
+If you try to put test classes in a package that already exists in the main module, the compiler will fail with:
+
+~~~~
+package exists in another module: org.example
+~~~~
+
+Each test package must also be `opens`ed to the test framework so that reflection-driven test discovery can see the test methods. The test `module-info.java` from the [Separate test module](#separate-test-module) example above, expanded with common test-only dependencies, looks like this:
+
+~~~~ java
+module org.example.tests {
+  requires org.example;          // access the exported public API
+  requires org.testng;           // test framework
+  requires org.easymock;         // if using EasyMock
+  // requires static org.slf4j;  // compile-time-only deps
+
+  opens org.example.tests to org.testng;
+}
+~~~~
+
+Test classes then go under `src/test/java/org/example/tests/`.
+
+#### Automatic module names
+
+Java 9+ JARs without a `module-info.class` are usable as *automatic modules*. Their module name is derived from (in priority order):
+
+1. The `Automatic-Module-Name` manifest attribute, if present.
+2. Otherwise, from the JAR filename, by stripping the version and replacing non-alphanumeric characters with `.`.
+
+Common test-framework module names:
+
+| Library | Automatic module name |
+|---------|-----------------------|
+| TestNG 7+ | `org.testng` (from manifest) |
+| EasyMock 5+ | `org.easymock` (from manifest) |
+| slf4j-api | `org.slf4j` (from manifest) |
+| jcommander | `jcommander` (derived from filename, not stable across rebrandings) |
+
+If you see `module not found: <name>` at compile time, inspect the JAR to learn what name JPMS has assigned it:
+
+~~~~ shell
+$ jar --file path/to/library.jar --describe-module
+# or
+$ unzip -p path/to/library.jar META-INF/MANIFEST.MF | grep -i module
+~~~~
+
+#### Resource loading
+
+Test classes often load resources via `ClassLoader.getResourceAsStream(...)`. Under JPMS this only works if the resource's package is `opens`ed or `exports`ed by the owning module. Two common cases:
+
+* A resource at `src/test/resources/config.properties` ends up in the test JAR's *root* — no package — and is always accessible.
+* A resource at `src/test/resources/org/example/tests/fixture.json` is in the `org.example.tests` package, which is already `opens`ed to the test framework for test discovery, so no extra configuration is needed.
+
+Mismatches surface as `InputStream` being `null`, not as exceptions. When tests that previously passed start reading resources as `null`, double-check the `opens` directives.
+
+#### Runtime execution (java-testng plugin)
+
+When `testModuleBuild` is `true`, the `java-testng` plugin runs tests with:
+
+~~~~
+java --module-path <all-deps-and-jars> \
+     --add-modules ALL-MODULE-PATH,<testModuleName> \
+     --module org.testng/org.testng.TestNG ...
+~~~~
+
+`ALL-MODULE-PATH` forces resolution of every JAR on the module path. This is necessary because TestNG's transitive dependencies (slf4j-api, jcommander, etc.) are automatic modules that aren't explicitly required by anything; without `ALL-MODULE-PATH` they would not be resolved and TestNG would fail at startup with `NoClassDefFoundError`.
+
+The `--module org.testng/org.testng.TestNG` entry point depends on TestNG shipping `Automatic-Module-Name: org.testng`, which TestNG 7.0+ does. If you pin to an older TestNG, separate-test-module mode will not work — stay on the patched-tests mode, or upgrade TestNG.
+
+### When to use separate test modules
+
+Choose separate test modules when you want tests to be limited to the main module's *exported* API. Tests physically cannot access internals, so accidentally relying on non-exported packages fails at compile time. This is a strong guarantee that your tests exercise the same surface your consumers see.
+
+Stay in patched-tests mode when:
+
+* You need to test package-private classes or non-exported packages.
+* You depend on legacy JARs whose derived automatic-module names are not stable.
+* Your project's main and test package trees deliberately overlap.
+
+Patched-tests mode is still the default when only `src/main/java/module-info.java` exists. It is not deprecated.
+
 ### JARs and Javadoc
 
 When `moduleBuild` is enabled, the `module-info.class` produced by the compiler is included in the main JAR created by `jar()`. When `testModuleBuild` is enabled, the test JAR similarly contains its own `module-info.class`. The `document()` method automatically switches to module-aware Javadoc generation by passing `--module <moduleName>` to `javadoc`.
