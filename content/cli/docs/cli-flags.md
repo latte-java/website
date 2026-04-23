@@ -25,15 +25,19 @@ For the list of commands those flags apply to, see [CLI Commands](../cli-command
 
 ### --debug
 
-Turns on debug-level logging and, when a build fails, prints the full stack trace of the underlying exception rather than just the message. Useful when a failure's surface error doesn't explain what happened.
+Turns on debug-level logging and, when a build fails, prints the full stack trace of the underlying exception rather than just the message. Useful when the error message doesn't explain what happened. When capturing output for a bug report, combine with `--noColor`:
+
+~~~~ shell
+$ latte --debug --noColor test 2>&1 | tee latte-debug.log
+~~~~
 
 ### --help
 
-Prints a short usage summary covering the built-in commands and flags, then exits. Run `latte --help` any time you want a refresher without visiting the docs.
+Prints a short usage summary covering the built-in commands and flags, then exits.
 
 ### --listTargets
 
-Lists every target defined in the current project's `project.latte` and exits without running anything. This is the fastest way to see what a project can do:
+Lists every target defined in the current project's `project.latte` and exits without running anything. Requires a `project.latte` in the current directory.
 
 ~~~~ shell
 $ latte --listTargets
@@ -60,11 +64,3 @@ $ latte --env=prod --skipTests deploy
 ~~~~
 
 How your project reads these switches is up to the project file — see [Variables](../variables/) for the mechanisms available.
-
-## Debugging a failed build
-
-When a build fails and the error message alone isn't enough, combine `--debug` and `--noColor` to get a clean, complete log suitable for pasting into a bug report:
-
-~~~~ shell
-$ latte --debug --noColor test 2>&1 | tee latte-debug.log
-~~~~

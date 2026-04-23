@@ -7,7 +7,7 @@ weight: 32
 
 ## Overview
 
-A *workflow* is an ordered list of *processes* that Latte runs to resolve dependencies or publish artifacts. When Latte needs to fetch an artifact, it tries each process in order and uses the first one that produces a result. When Latte publishes an artifact, it runs every process in order so the artifact ends up in every configured location.
+A workflow is an ordered list of processes that Latte runs to resolve dependencies or publish artifacts. When Latte needs to fetch an artifact, it tries each process in order and uses the first one that produces a result. When Latte publishes an artifact, it runs every process in order so the artifact ends up in every configured location.
 
 Every project file defines two workflows:
 
