@@ -51,3 +51,9 @@ target(name: "build") {
 ~~~~
 
 That's it! It couldn't be simpler.
+
+# Finding plugin methods and settings
+
+There is currently no built-in command to enumerate the methods or settings of a loaded plugin. Use the plugin pages in this documentation as the reference — each plugin page lists its settings, methods, and any plugin-specific configuration.
+
+The list of first-party plugins is in the sidebar: [Java](../plugin-java/), [Groovy](../plugin-groovy/), [Java TestNG](../plugin-java-testng/), [Groovy TestNG](../plugin-groovy-testng/), [File](../plugin-file/), [Database](../plugin-database/), [Release Git](../plugin-release-git/), [Dependency](../plugin-dependency/), [Linter](../plugin-linter/), [Debian](../plugin-debian/), [IDEA](../plugin-idea/), and [POM](../plugin-pom/).

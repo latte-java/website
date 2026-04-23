@@ -9,6 +9,8 @@ weight: 31
 
 Latte's dependency management system uses repositories to download the artifacts a project depends on. These repositories are usually HTTP web servers.
 
+The `workflow { }` and `publishWorkflow { }` DSL shown on this page is covered in full on the [Workflows](../workflows/) page — including the complete list of processes (`cache`, `url`, `maven`, `s3`, `mavenCache`) and their attributes.
+
 In most commercial environments, project's will use 2 different repositories:
 
 1. A public repository for all of the open source artifacts
