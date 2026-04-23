@@ -89,7 +89,7 @@ $ latte upgrade <subcommand>
 | `plugins` | Finds every `loadPlugin(...)` call in `project.latte`, resolves the latest version of each, and rewrites the file. |
 | `dependency <artifact-id> [version]` | Upgrades a single dependency. If `version` is omitted, resolves the latest. |
 | `dependencies` | Resolves the latest version of every dependency in every group and rewrites `project.latte`. |
-| `all` | Runs `runtime`, `plugins`, and `dependencies` in sequence. |
+| `all` | Runs `runtime`, `plugins`, and `dependencies` in sequence. Outside a project (no `project.latte`), only `runtime` runs; `plugins` and `dependencies` are skipped. |
 | `help` | Prints usage for the upgrade subcommands. |
 
 ### Examples
@@ -114,7 +114,7 @@ $ latte upgrade all
 
 ## Running targets
 
-Any argument that is not `init`, `install`, `upgrade`, or a flag is treated as a target name. Targets are defined in `project.latte` — see [Targets](../targets/).
+Any argument that is not a flag is treated as a target name. If the argument is `init`, `install`, or `upgrade` and the project does not define a target of that name, Latte runs the built-in command instead (see [Overview](#overview)). Targets are defined in `project.latte` — see [Targets](../targets/).
 
 ~~~~ shell
 $ latte clean

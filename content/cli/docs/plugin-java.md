@@ -227,28 +227,28 @@ During test compilation, the main build directory is placed on `--module-path` s
 
 #### Test packages must differ from main packages
 
-JPMS forbids two modules from declaring the same package. Because the test module is a *separate* module, its classes have to live in different packages from the main module. A common convention is to append `.tests` to the package names — for example, main code in `org.example.foo` with tests in `org.example.foo.tests`.
+JPMS forbids two modules from declaring the same package. Because the test module is a *separate* module, its classes have to live in different packages from the main module. A common convention is to append `.tests` to the package names — for example, main code in `org.example` with tests in `org.example.tests`.
 
 If you try to put test classes in a package that already exists in the main module, the compiler will fail with:
 
 ~~~~
-package exists in another module: org.example.foo
+package exists in another module: org.example
 ~~~~
 
-Each test package must also be `opens`ed to the test framework so that reflection-driven test discovery can see the test methods. A minimal test `module-info.java` for a main module named `org.example.foo` looks like this:
+Each test package must also be `opens`ed to the test framework so that reflection-driven test discovery can see the test methods. The test `module-info.java` from the [Separate test module](#separate-test-module) example above, expanded with common test-only dependencies, looks like this:
 
 ~~~~ java
-module org.example.foo.tests {
-  requires org.example.foo;      // access the exported public API
+module org.example.tests {
+  requires org.example;          // access the exported public API
   requires org.testng;           // test framework
   requires org.easymock;         // if using EasyMock
   // requires static org.slf4j;  // compile-time-only deps
 
-  opens org.example.foo.tests to org.testng;
+  opens org.example.tests to org.testng;
 }
 ~~~~
 
-Test classes then go under `src/test/java/org/example/foo/tests/`.
+Test classes then go under `src/test/java/org/example/tests/`.
 
 #### Automatic module names
 
@@ -279,7 +279,7 @@ $ unzip -p path/to/library.jar META-INF/MANIFEST.MF | grep -i module
 Test classes often load resources via `ClassLoader.getResourceAsStream(...)`. Under JPMS this only works if the resource's package is `opens`ed or `exports`ed by the owning module. Two common cases:
 
 * A resource at `src/test/resources/config.properties` ends up in the test JAR's *root* — no package — and is always accessible.
-* A resource at `src/test/resources/org/example/foo/tests/fixture.json` is in the `org.example.foo.tests` package, which is already `opens`ed to the test framework for test discovery, so no extra configuration is needed.
+* A resource at `src/test/resources/org/example/tests/fixture.json` is in the `org.example.tests` package, which is already `opens`ed to the test framework for test discovery, so no extra configuration is needed.
 
 Mismatches surface as `InputStream` being `null`, not as exceptions. When tests that previously passed start reading resources as `null`, double-check the `opens` directives.
 
