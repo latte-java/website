@@ -112,18 +112,21 @@ class MyPlugin implements Plugin {
 }
 ~~~~ 
 
-If you want to get some extra helper methods for your plugin, you can extend `org.lattejava.plugin.groovy.BaseGroovyPlugin`, but this isn't required.
+If you want to get some extra helper methods for your plugin, you can extend `org.lattejava.cli.plugin.groovy.BaseGroovyPlugin`, but this isn't required.
 
-Your plugin class must have a constructor that takes the `Project` and `Output` objects like this:
+Your plugin class must have a constructor that takes the `Project`, `RuntimeConfiguration`, and `Output` objects — Latte uses reflection to find that exact three-argument constructor when it loads your plugin, so skipping an argument will bite you at load time:
 
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
-  MyPlugin(project, output) {
-    super(project, output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 }
 ~~~~ 
@@ -147,13 +150,16 @@ Now let's add the settings object to our plugin:
 ~~~~ groovy
 package com.mycompany
 
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
-  MyPlugin(project, output) {
-    super(project, output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 }
 ~~~~ 
@@ -166,13 +172,17 @@ Lastly, you can define any number of public methods on your plugin. Each plugin 
 package com.mycompany
 
 import java.nio.file.Files
-import org.lattejava.plugin.groovy.BaseGroovyPlugin
+
+import org.lattejava.cli.domain.Project
+import org.lattejava.cli.plugin.groovy.BaseGroovyPlugin
+import org.lattejava.cli.runtime.RuntimeConfiguration
+import org.lattejava.output.Output
 
 class MyPlugin extends BaseGroovyPlugin {
   def settings = new MyPluginSettings()
 
-  MyPlugin(project, output) {
-    super(project, output)
+  MyPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
   }
 
   def createFile() {
@@ -189,6 +199,7 @@ Now we need to test our plugin. Create the Groovy class `src/test/groovy/com/myc
 package com.mycompany
 
 import org.lattejava.cli.domain.Project
+import org.lattejava.cli.runtime.RuntimeConfiguration
 import org.lattejava.output.Output
 import org.lattejava.output.SystemOutOutput
 import org.testng.annotations.Test
@@ -203,7 +214,8 @@ class MyPluginTest {
   def test() {
     Output output = new SystemOutOutput(false)
     Project project = new Project(Paths.get("build/test"), output)
-    MyPlugin myPlugin = new MyPlugin(project, output)
+    RuntimeConfiguration runtimeConfiguration = new RuntimeConfiguration()
+    MyPlugin myPlugin = new MyPlugin(project, runtimeConfiguration, output)
     myPlugin.createFile()
 
     def bytes = Files.readAllBytes(Paths.get("build/test/foobar.txt"))

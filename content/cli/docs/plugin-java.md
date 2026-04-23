@@ -39,6 +39,7 @@ project
    |    |     |- main     <- The main Java source files are compiled into this directory and the main resources are copied into this directory
    |    |     |- test     <- The test Java source files are compiled into this directory and the test resources are copied into this directory
    |    |
+   |    |- doc            <- JavaDoc output from the `document()` method is written here
    |    |- jars           <- The JAR files that contain your compiled Java files are created here
 ~~~~ 
 

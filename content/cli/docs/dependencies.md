@@ -60,7 +60,7 @@ You can select which dependency groups are exported when a project is released. 
 ~~~~ groovy
 dependencies {
   group(name: "test-compile", export: false) {
-    dependency(id: "org.testng:testng:6.8.7")
+    dependency(id: "org.testng:testng:7.10.2")
   }
 }
 ~~~~ 
