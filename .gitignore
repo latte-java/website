@@ -11,3 +11,4 @@ hugo_stats.json
 node_modules/
 .hugo_build.lock
 .superpowers/
+.worktrees/
