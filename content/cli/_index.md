@@ -19,7 +19,7 @@ curl -fsSL https://lattejava.org/cli/install | bash
 latte init
 
 # Install a dependency
-latte install org.apache.commons:commons-collections:3.1.0
+latte install org.lattejava:web:0.1.0
 
 # Build the project
 latte build

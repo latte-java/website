@@ -317,6 +317,73 @@ The `jar` method on the Java plugin allows you to build the project JAR files. T
 java.jar()
 ~~~~ 
 
+## Running
+
+The `run` method on the Java plugin executes a Java main class or a single `.java` source file using the project's resolved classpath/module-path. The method returns the child process exit code, and by default fails the build when that exit code is non-zero. Here's the simplest invocation:
+
+~~~~ groovy
+java.run(main: "com.example.App")
+~~~~
+
+The `main` attribute is required and accepts two forms:
+
+* A fully qualified class name (e.g. `com.example.App`). The plugin searches the resolved classpath/module-path for a matching `.class` entry. If the entry lives inside a named JPMS module, the launch automatically uses `--module <moduleName>/<class>`. If the class is not found anywhere on the resolved paths, the build fails.
+* A path to a `.java` source file (anything ending in `.java`, e.g. `src/main/tools/Hello.java`). The path is resolved relative to `workingDirectory`. The Java launcher's source-file mode is used to compile and run the file in one step. When `moduleBuild` is enabled, the plugin adds the resolved module-path and `--add-modules` for every module on it so the source file can `import` them.
+
+The project's `main` group publications (e.g. the JAR produced by `jar()`) are added to the resolved paths automatically, so a typical workflow is `java.compile()` → `java.jar()` → `java.run(...)`.
+
+### Attributes
+
+| name                | description                                                                                                                                                                       | type                       | required |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|----------|
+| main                | The fully qualified main class name, or a path to a `.java` source file                                                                                                           | String                     | true     |
+| arguments           | Program arguments passed to the main method                                                                                                                                       | String                     | false    |
+| jvmArguments        | JVM arguments (e.g. `-Xmx512m`, `-Dkey=value`) passed before the entry point                                                                                                      | String                     | false    |
+| additionalClasspath | Extra paths to append to the resolved classpath/module-path (in addition to the project's `main` publications)                                                                    | List\<Path \| String>      | false    |
+| dependencies        | Dependency groups to resolve into the run classpath. Defaults to `compile`, `runtime`, and `provided` with transitive resolution across `compile`/`runtime`/`provided`            | List\<Map>                 | false    |
+| environment         | Extra environment variables merged on top of the inherited environment                                                                                                            | Map\<String, String>       | false    |
+| failOnError         | When `true` (the default), a non-zero child exit code fails the build. Set to `false` to receive the exit code as the return value without failing                                | boolean                    | false    |
+| workingDirectory    | Working directory for the child process. Defaults to the project directory                                                                                                       | Path or String             | false    |
+
+The `dependencies` attribute uses the same Map structure as the compile dependency groups described above (`group`, `transitive`, `fetchSource`, `transitiveGroups`).
+
+### Examples
+
+Run a main class with JVM and program arguments:
+
+~~~~ groovy
+java.run(
+    main: "com.example.App",
+    jvmArguments: "-Xmx512m -Dconfig=prod",
+    arguments: "--port 8080"
+)
+~~~~
+
+Run a standalone source file (no compile step required):
+
+~~~~ groovy
+java.run(main: "src/main/tools/Hello.java")
+~~~~
+
+Capture the exit code instead of failing the build:
+
+~~~~ groovy
+int rc = java.run(main: "com.example.App", failOnError: false)
+if (rc != 0) {
+  // handle the failure yourself
+}
+~~~~
+
+Add extra environment variables and pin the working directory:
+
+~~~~ groovy
+java.run(
+    main: "com.example.App",
+    environment: ["MY_VAR": "value"],
+    workingDirectory: "build/run"
+)
+~~~~
+
 ## Cleaning
 
 The `clean` method on the Java plugin deletes the entire `build` directory. Here's an example of using this method:
