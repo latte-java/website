@@ -6,280 +6,564 @@ github: "https://github.com/latte-java/jwt"
 og_image: "/images/og/jwt.png"
 ---
 
+Java JWT is intended to be fast and easy to use. It has zero external runtime dependencies — no Jackson, no Bouncy Castle, no Apache Commons, no Guava. Pure Java — just add a VM.
+
 ## Install
 
 Add to your Latte project:
 
 ```groovy
-dependency(id: "org.lattejava:latte-jwt:1.0.0")
+dependency(id: "org.lattejava:jwt:0.1.1")
 ```
 
 Or install with the CLI:
 
 ```bash
-latte install org.lattejava:latte-jwt:1.0.0
+latte install org.lattejava:jwt:0.1.1
 ```
 
-Also available for Maven:
-
-```xml
-<dependency>
-  <groupId>org.lattejava</groupId>
-  <artifactId>latte-jwt</artifactId>
-  <version>1.0.0</version>
-</dependency>
-```
-
-And Gradle:
-
-```groovy
-implementation 'org.lattejava:latte-jwt:1.0.0'
-```
+Maven and Gradle are not currently supported — the plan for now is to ship through the Latte CLI.
 
 ## Features
 
-- JWT signing and verification with `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `Ed25519`, `Ed448`
-- Single dependency on Jackson -- no Bouncy Castle, Apache Commons, or Guava
+- JWT signing and verification with `HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `ES256`, `ES256K`, `ES384`, `ES512`, `PS256`, `PS384`, `PS512`, `Ed25519`, `Ed448`
+  - `Ed25519` and `Ed448` use fully-specified JOSE names; the legacy `EdDSA` header value is not accepted out of the box. See the [Ed25519 and Ed448 interop notes](#ed25519-and-ed448-interop-notes) below.
+- Zero external runtime dependencies — no Jackson, Bouncy Castle, Apache Commons, or Guava
+- Support for Bouncy Castle JCE or any other third-party JCA provider
 - PEM decoding and encoding for private and public keys
-- JSON Web Key (JWK) support including JWKS endpoint retrieval
-- Key pair generation for RSA, RSA PSS, EC, and EdDSA
+- JSON Web Key (JWK) support — build from `PublicKey`, `PrivateKey`, PEM, or `Certificate`; parse public keys from a JWK; retrieve from JWKS endpoints; SHA-1 and SHA-256 thumbprints
+- X.509 (v3) certificate building, self-signed or CA-signed
+- Key-pair generation for RSA (2048/3072/4096), RSA-PSS (2048/3072/4096), EC (P-256/P-384/P-521), and EdDSA (Ed25519/Ed448)
 - OpenID Connect `at_hash` and `c_hash` support
-- Clock skew tolerance for expiration and not-before validation
-- Key rotation support via `kid` header
+- OpenID Connect discovery with issuer-equality validation
+- Self-refreshing JWKS with `Cache-Control` / `Retry-After` honoring and singleflight refresh
+- Clock-skew tolerance for `exp` and `nbf` validation
+- Key rotation via the `kid` header
+- `x5t` and `x5t#S256` generation from X.509 certificates
 
-## Sign and encode a JWT using HMAC
+## Sign and verify
 
-```java
-// Build an HMAC signer using a SHA-256 hash
-Signer signer = HMACSigner.newSHA256Signer("too many secrets");
+The recommended entry points are the `Signers` and `Verifiers` factories. They take an `Algorithm` constant plus key material, and reject the wrong key type for the wrong family (e.g. passing a private key to `forHMAC`) so a misplaced key can't be silently coerced into the wrong algorithm family. A `Signer` or `Verifier` is safe to reuse and safe to share across threads.
 
-// Build a new JWT with an issuer(iss), issued at(iat), subject(sub) and expiration(exp)
-JWT jwt = new JWT().setIssuer("www.acme.com")
-                   .setIssuedAt(ZonedDateTime.now(ZoneOffset.UTC))
-                   .setSubject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
-                   .setExpiration(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(60));
-                       
-// Sign and encode the JWT to a JSON string representation
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
-```
+JWTs are built with an immutable fluent builder and serialized by a `JWTEncoder`. Decoding is done by a `JWTDecoder`, which takes a `VerifierResolver` — use `VerifierResolver.byKid(Map<String, Verifier>)` for a `kid`-indexed keyring, or `VerifierResolver.of(verifier)` to wrap a single verifier.
 
-A higher strength hash can be used by changing the signer. The encoding and decoding steps are not affected.
+For the happy path, `JWT.decode(encodedJWT, verifier)` (and an `(encodedJWT, verifier, validator)` overload) routes through a shared default `JWTDecoder` so you don't have to construct one. The same overloads accept a `VerifierResolver` when you have a keyring. Build your own `JWTDecoder` with `JWTDecoder.builder()` when you need non-default settings — a custom `JSONProcessor`, `clockSkew`, allowed algorithms, `fixedTime`, etc. — and pass it to the `JWT.decode(encodedJWT, decoder, verifier)` overload (or call `decoder.decode(...)` directly).
+
+### Sign and encode a JWT using HMAC
 
 ```java
-// Build an HMAC signer using a SHA-384 hash
-Signer signer384 = HMACSigner.newSHA384Signer("too many secrets");
+// Generate and persist a secret; the verifier needs the same value.
+String secret = HMACSecrets.generateSHA256();
 
-// Build an HMAC signer using a SHA-512 hash
-Signer signer512 = HMACSigner.newSHA512Signer("too many secrets");
+// Build an HMAC signer for HS256
+Signer signer = Signers.forHMAC(Algorithm.HS256, secret);
+
+// Build a JWT with issuer (iss), issued-at (iat), subject (sub) and expiration (exp)
+JWT jwt = JWT.builder()
+             .issuer("www.acme.com")
+             .issuedAt(Instant.now())
+             .subject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
+             .expiresAt(Instant.now().plusSeconds(3600))
+             .build();
+
+// Sign and encode the JWT to its compact JWS string representation
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
 ```
 
-## Verify and decode a JWT using HMAC
+A higher-strength hash can be used by passing a different algorithm. Use the matching generator so the secret matches the digest size. The encoding and decoding steps are unchanged.
+
+```java
+String secret384 = HMACSecrets.generateSHA384();
+Signer signer384 = Signers.forHMAC(Algorithm.HS384, secret384);
+
+String secret512 = HMACSecrets.generateSHA512();
+Signer signer512 = Signers.forHMAC(Algorithm.HS512, secret512);
+```
+
+Alternate: `HMACSigner.newSHA256Signer(secret)` is the family-specific static factory.
+
+### Verify and decode a JWT using HMAC
 
 ```java
 // Build an HMAC verifier using the same secret that was used to sign the JWT
-Verifier verifier = HMACVerifier.newVerifier("too many secrets");
+Verifier verifier = Verifiers.forHMAC(Algorithm.HS256, secret);
 
 // Verify and decode the encoded string JWT to a rich object
-JWT jwt = JWT.getDecoder().decode(encodedJWT, verifier);
+JWT jwt = JWT.decode(encodedJWT, verifier);
 
 // Assert the subject of the JWT is as expected
-assertEquals(jwt.subject, "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
+assertEquals(jwt.subject(), "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
 ```
 
-## Sign and encode a JWT using RSA
+For a `kid`-indexed keyring or any other multi-key arrangement, pass a `VerifierResolver` instead — `JWT.decode(encodedJWT, VerifierResolver.byKid(Map<String, Verifier>))`.
+
+Alternate: `HMACVerifier.newVerifier(secret)` produces the same verifier.
+
+### Sign and encode a JWT using RSA
 
 ```java
-// Build an RSA signer using a SHA-256 hash. A signer may also be built using the PrivateKey object.
-Signer signer = RSASigner.newSHA256Signer(new String(Files.readAllBytes(Paths.get("private_key.pem"))));
+// Build an RSA signer from a PEM-encoded private key. A PrivateKey object may be passed instead.
+String pemPrivateKey = Files.readString(Paths.get("private_key.pem"));
+Signer signer = Signers.forAsymmetric(Algorithm.RS256, pemPrivateKey);
 
-// Build a new JWT with an issuer(iss), issued at(iat), subject(sub) and expiration(exp)
-JWT jwt = new JWT().setIssuer("www.acme.com")
-                   .setIssuedAt(ZonedDateTime.now(ZoneOffset.UTC))
-                   .setSubject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
-                   .setExpiration(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(60));
-        
-// Sign and encode the JWT to a JSON string representation
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
+JWT jwt = JWT.builder()
+             .issuer("www.acme.com")
+             .issuedAt(Instant.now())
+             .subject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
+             .expiresAt(Instant.now().plusSeconds(3600))
+             .build();
+
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
 ```
 
-## Verify and decode a JWT using RSA
+A higher-strength hash can be used by passing a different algorithm. The encoding and decoding steps are unchanged.
 
 ```java
-// Build an RSA verifier using an RSA Public Key. A verifier may also be built using the PublicKey object.
-Verifier verifier = RSAVerifier.newVerifier(Paths.get("public_key.pem"));
-
-// Verify and decode the encoded string JWT to a rich object
-JWT jwt = JWT.getDecoder().decode(encodedJWT, verifier);
-
-// Assert the subject of the JWT is as expected
-assertEquals(jwt.subject, "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
+Signer signer384 = Signers.forAsymmetric(Algorithm.RS384, pemPrivateKey);
+Signer signer512 = Signers.forAsymmetric(Algorithm.RS512, pemPrivateKey);
 ```
 
-## Sign and encode a JWT using EC
+Alternate: `RSASigner.newSHA256Signer(pemPrivateKey)` (and the `SHA384` / `SHA512` variants) produce the same signer. PSS signatures are exposed as `Algorithm.PS256` / `PS384` / `PS512` through `Signers.forAsymmetric`, or via `RSAPSSSigner.newSHA256Signer(...)`.
+
+### Verify and decode a JWT using RSA
 
 ```java
-// Build an EC signer using a SHA-256 hash. A signer may also be built using the PrivateKey object.
-Signer signer = ECSigner.newSHA256Signer(new String(Files.readAllBytes(Paths.get("private_key.pem"))));
+// Build an RSA verifier from a PEM-encoded public key. A PublicKey object may be passed instead.
+String pemPublicKey = Files.readString(Paths.get("public_key.pem"));
+Verifier verifier = Verifiers.forAsymmetric(Algorithm.RS256, pemPublicKey);
 
-// Build a new JWT with an issuer(iss), issued at(iat), subject(sub) and expiration(exp)
-JWT jwt = new JWT().setIssuer("www.acme.com")
-                   .setIssuedAt(ZonedDateTime.now(ZoneOffset.UTC))
-                   .setSubject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
-                   .setExpiration(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(60));
-        
-// Sign and encode the JWT to a JSON string representation
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
+JWT jwt = JWT.decode(encodedJWT, verifier);
+
+assertEquals(jwt.subject(), "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
 ```
 
-## Verify and decode a JWT using EC
+Alternate: `RSAVerifier.newVerifier(Paths.get("public_key.pem"))` is the family-specific factory.
+
+### Sign and encode a JWT using EC
 
 ```java
-// Build an EC verifier using an EC Public Key. A verifier may also be built using the PublicKey object.
-Verifier verifier = ECVerifier.newVerifier(Paths.get("public_key.pem"));
+// Build an EC signer from a PEM-encoded private key. A PrivateKey object may be passed instead.
+String pemPrivateKey = Files.readString(Paths.get("private_key.pem"));
+Signer signer = Signers.forAsymmetric(Algorithm.ES256, pemPrivateKey);
 
-// Verify and decode the encoded string JWT to a rich object
-JWT jwt = JWT.getDecoder().decode(encodedJWT, verifier);
+JWT jwt = JWT.builder()
+             .issuer("www.acme.com")
+             .issuedAt(Instant.now())
+             .subject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
+             .expiresAt(Instant.now().plusSeconds(3600))
+             .build();
 
-// Assert the subject of the JWT is as expected
-assertEquals(jwt.subject, "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
 ```
 
-## Sign and verify a JWT using EdDSA
+```java
+Signer signer384 = Signers.forAsymmetric(Algorithm.ES384, pemPrivateKey);
+Signer signer512 = Signers.forAsymmetric(Algorithm.ES512, pemPrivateKey);
+```
+
+Alternate: `ECSigner.newSHA256Signer(pemPrivateKey)` (and the `SHA384` / `SHA512` variants) produce the same signer.
+
+### Verify and decode a JWT using EC
 
 ```java
-// Build an EdDSA signer. The algorithm (Ed25519 or Ed448) is determined from the key.
-Signer signer = EdDSASigner.newSigner(new String(Files.readAllBytes(Paths.get("private_key.pem"))));
+// Build an EC verifier from a PEM-encoded public key. A PublicKey object may be passed instead.
+String pemPublicKey = Files.readString(Paths.get("public_key.pem"));
+Verifier verifier = Verifiers.forAsymmetric(Algorithm.ES256, pemPublicKey);
 
-JWT jwt = new JWT().setIssuer("www.acme.com")
-                   .setSubject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
-                   .setExpiration(ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(60));
+JWT jwt = JWT.decode(encodedJWT, verifier);
 
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
+assertEquals(jwt.subject(), "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
+```
+
+Alternate: `ECVerifier.newVerifier(Paths.get("public_key.pem"))`.
+
+### Sign and verify a JWT using EdDSA
+
+```java
+// Build an EdDSA signer. The curve (Ed25519 or Ed448) is determined from the key.
+String pemPrivateKey = Files.readString(Paths.get("private_key.pem"));
+Signer signer = Signers.forAsymmetric(Algorithm.Ed25519, pemPrivateKey);
+
+JWT jwt = JWT.builder()
+             .issuer("www.acme.com")
+             .subject("f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3")
+             .expiresAt(Instant.now().plusSeconds(3600))
+             .build();
+
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
 
 // Verify using the public key
-Verifier verifier = EdDSAVerifier.newVerifier(Paths.get("public_key.pem"));
-JWT decoded = JWT.getDecoder().decode(encodedJWT, verifier);
+String pemPublicKey = Files.readString(Paths.get("public_key.pem"));
+Verifier verifier = Verifiers.forAsymmetric(Algorithm.Ed25519, pemPublicKey);
+JWT decoded = JWT.decode(encodedJWT, verifier);
+```
+
+Alternate: `EdDSASigner.newSigner(pemPrivateKey)` and `EdDSAVerifier.newVerifier(pemPublicKey)` are the family-specific factories.
+
+## Build your own JWTDecoder
+
+The `JWT.decode(...)` static helpers route through a shared default decoder that uses the bundled zero-dependency `LatteJSONProcessor`. Build your own when you need a different `JSONProcessor` or any other non-default setting — `clockSkew`, `expectedAlgorithms`, `expectedType`, `criticalHeaders`, `maxInputBytes`, `fixedTime`, etc. The clock-skew and time-pinning examples below use the same builder.
+
+`JSONProcessor` is a strategy interface — `serialize(Map)` / `deserialize(byte[])` — and **the library does not bundle a Jackson, Gson, or other third-party adapter**. To use one, write a small class that implements `JSONProcessor` and delegates to your JSON library of choice. Implementations must be stateless and thread-safe; the encoder and decoder may call them concurrently.
+
+```java
+// MyJacksonJSONProcessor is YOUR class -- a thin adapter you write that implements
+// JSONProcessor and delegates to Jackson (or Gson, or any other JSON library).
+// This library does not ship one; keeping it user-supplied is what lets the core
+// stay zero-dependency at runtime.
+JSONProcessor jsonProcessor = new MyJacksonJSONProcessor();
+
+JWTDecoder decoder = JWTDecoder.builder()
+                               .jsonProcessor(jsonProcessor)
+                               .expectedAlgorithms(Set.of(Algorithm.RS256))
+                               .build();
+
+// Either pass the decoder to the JWT.decode helper:
+JWT jwt = JWT.decode(encodedJWT, decoder, verifier);
+
+// ...or call decoder.decode(...) directly. Both forms are equivalent (the
+// decoder.decode instance method takes a VerifierResolver -- wrap with
+// VerifierResolver.of(verifier) when you only have a single verifier).
 ```
 
 ## Clock skew
 
-When verifying JWTs across distributed systems, clocks may not be perfectly synchronized. You can allow a tolerance window for the `exp` and `nbf` claims:
+When verifying JWTs across distributed systems, clocks may not be perfectly synchronized. Allow a tolerance window for the `exp` and `nbf` claims:
 
 ```java
-// Allow up to 60 seconds of clock skew
-JWT jwt = JWT.getDecoder().withClockSkew(60).decode(encodedJWT, verifier);
+Verifier verifier = Verifiers.forAsymmetric(Algorithm.ES256,
+    Files.readString(Paths.get("public_key.pem")));
+
+// Allow up to 60 seconds of clock skew when asserting 'exp' and 'nbf'.
+JWTDecoder decoder = JWTDecoder.builder()
+                               .clockSkew(Duration.ofSeconds(60))
+                               .build();
+
+JWT jwt = decoder.decode(encodedJWT, VerifierResolver.of(verifier));
+
+assertEquals(jwt.subject(), "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
 ```
+
+A shorter equivalent: `new JWTDecoder(Duration.ofSeconds(60))`.
 
 ## Key rotation
 
-When using multiple signing keys, include a `kid` (key ID) in the JWT header and provide a map of verifiers:
+When using multiple signing keys, include a `kid` (key ID) in the JWT header and pass a `VerifierResolver` that maps each `kid` to its verifier. The decoder selects the correct verifier using the `kid` header value.
 
 ```java
-// Sign with a kid
-Signer signer = HMACSigner.newSHA256Signer("secret", "key-1");
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
+// Sign with a kid -- pass the key ID as the third argument so the encoder
+// emits it in the JWT header automatically.
+Signer signer = Signers.forHMAC(Algorithm.HS256, secret, "key-1");
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
 
-// Verify with multiple keys -- the decoder selects the correct verifier using the kid header
+// Verify against a kid-indexed keyring
 Map<String, Verifier> verifiers = Map.of(
-    "key-1", HMACVerifier.newVerifier("secret"),
-    "key-2", HMACVerifier.newVerifier("other-secret")
+    "key-1", Verifiers.forHMAC(Algorithm.HS256, secret),
+    "key-2", Verifiers.forHMAC(Algorithm.HS256, otherSecret)
 );
-JWT decoded = JWT.getDecoder().decode(encodedJWT, verifiers);
+JWT decoded = JWT.decode(encodedJWT, VerifierResolver.byKid(verifiers));
 ```
+
+For OIDC issuers that publish a JWKS, prefer the `JWKS` helper (below) — it implements `VerifierResolver` and handles rotation, caching, and refresh for you.
 
 ## Custom claims
 
 ```java
-// Add custom claims when building a JWT
-JWT jwt = new JWT().setIssuer("www.acme.com")
-                   .addClaim("email", "user@example.com")
-                   .addClaim("roles", List.of("admin", "user"));
-String encodedJWT = JWT.getEncoder().encode(jwt, signer);
+// Add custom claims when building a JWT. Registered claims (iss, sub, iat, exp,
+// nbf, aud, jti) use their typed setters; .claim(...) is for non-registered
+// claims and will throw if called with a registered name.
+JWT jwt = JWT.builder()
+             .issuer("www.acme.com")
+             .claim("email", "user@example.com")
+             .claim("roles", List.of("admin", "user"))
+             .build();
 
-// Retrieve custom claims after decoding
-JWT decoded = JWT.getDecoder().decode(encodedJWT, verifier);
+String encodedJWT = new JWTEncoder().encode(jwt, signer);
+
+// Retrieve custom claims after decoding. The get* family looks up a claim by
+// name (registered or custom) and coerces to the requested Java type; absent
+// claims return null.
+JWT decoded = JWT.decode(encodedJWT, verifier);
 String email = decoded.getString("email");
-List<Object> roles = decoded.getList("roles");
+List<String> roles = decoded.getList("roles", String.class);
 ```
 
-## Time machine decoder
+Available accessors: `getString`, `getBoolean`, `getInteger`, `getLong`, `getDouble`, `getFloat`, `getNumber`, `getBigInteger`, `getBigDecimal`, `getList(name)`, `getList(name, elementType)`, `getMap`, and `getObject` for the raw value.
 
-For testing with hard-coded JWTs that may be expired, you can adjust the decoder's concept of "now":
+## Verify tokens against a remote JWKS
+
+For OIDC issuers that publish a JWKS, use `JWKS` to manage caching, refresh, and rotation:
 
 ```java
-// Decode a JWT as if the current time were January 1, 2019
-ZonedDateTime thePast = ZonedDateTime.of(2019, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-JWT jwt = JWT.getTimeMachineDecoder(thePast).decode(encodedJWT, verifier);
+try (JWKS jwks = JWKS.fromIssuer("https://idp.example.com/").build()) {
+    JWT jwt = JWT.decode(encodedJWT, jwks);
+}
+```
+
+`JWKS` implements `VerifierResolver`, performs an initial synchronous load on `build()` (bounded by `refreshTimeout`), and refreshes on `kid` cache miss (singleflight-coalesced) or on a virtual-thread scheduler tick when `scheduledRefresh(true)` is set. Honors `Cache-Control: max-age` and `Retry-After` from the JWKS endpoint. Implements `AutoCloseable`; call `close()` in shutdown hooks or use try-with-resources.
+
+Other entry points:
+
+- `JWKS.fromWellKnown(url)` — fully-qualified discovery URL (e.g. `/.well-known/openid-configuration`).
+- `JWKS.fromJWKS(url)` — direct JWKS endpoint, no discovery.
+- `JWKS.fromConfiguration(cfg)` — use a pre-fetched `OpenIDConnectConfiguration`.
+- `JWKS.of(jwk1, jwk2, ...)` — static in-memory keys (no HTTP, no scheduler).
+- `JWKS.fetch(url)` — one-shot `List<JSONWebKey>` from a JWKS URL.
+
+## OIDC discovery
+
+`OpenIDConnect.discover(issuer)` fetches the OpenID Connect Provider Metadata for a given issuer and returns a typed `OpenIDConnectConfiguration`:
+
+```java
+OpenIDConnectConfiguration cfg = OpenIDConnect.discover("https://accounts.google.com");
+String jwksURI       = cfg.jwksURI();
+String tokenEndpoint = cfg.tokenEndpoint();
+List<String> sigAlgs = cfg.idTokenSigningAlgValuesSupported();
+// cfg.otherClaims() holds any non-standard fields the provider returned
+```
+
+`discover(issuer)` enforces OIDC Discovery 1.0 §4.3 issuer-equality validation: the response's `issuer` field must match the input issuer (after single-trailing-slash normalization). If the issuers don't match, `OpenIDConnectException` is thrown.
+
+For RFC 8414 OAuth-only servers — or when you already have the full well-known URL — use `OpenIDConnect.discoverFromWellKnown(wellKnownURL)`. Note that this overload does not perform issuer-equality validation, which is a security downgrade relative to `discover(issuer)`.
+
+## Per-instance hardening with FetchLimits
+
+By default, `JWKS` and `OpenIDConnect.discover` apply conservative limits on response size, redirect count, and JSON parsing. You can tighten them per instance with `FetchLimits`:
+
+```java
+FetchLimits tight = FetchLimits.builder()
+    .maxResponseBytes(64 * 1024)
+    .maxRedirects(1)
+    .build();
+
+try (JWKS jwks = JWKS.fromIssuer("https://idp.example.com/").fetchLimits(tight).build()) {
+    JWT jwt = JWT.decode(encodedJWT, jwks);
+}
+```
+
+By default, redirects are confined to the same origin (scheme + host + port). Cross-origin redirects are rejected unless `FetchLimits.builder().allowCrossOriginRedirects(true)` is set — that opt-in is a deliberate security trade-off.
+
+## Fail-fast at boot
+
+If you want the application to fail at startup when the initial JWKS fetch cannot complete, use `failFast(true)`:
+
+```java
+// Throws OpenIDConnectException (discovery failure) or JWKSFetchException (JWKS fetch failure) if the initial fetch fails.
+JWKS jwks = JWKS.fromIssuer("https://idp.example.com/").failFast(true).build();
+```
+
+Without `failFast`, a failed initial fetch is silently tolerated and the `JWKS` starts with an empty key set, retrying on the next refresh tick or `kid` miss.
+
+## Time-pinning the decoder
+
+For tests with hard-coded JWTs that may be expired, pin the decoder's notion of "now" to any `Instant` — past or future. Ideally tests generate a fresh JWT per run so the expiration check passes naturally; this option exists when that isn't practical.
+
+```java
+Verifier verifier = Verifiers.forAsymmetric(Algorithm.ES256,
+    Files.readString(Paths.get("public_key.pem")));
+
+// Pin the decoder to a specific instant. Use ONLY in tests -- never in production.
+Instant thePast = Instant.parse("2019-01-01T00:00:00Z");
+JWTDecoder timeMachine = JWTDecoder.builder()
+                                   .fixedTime(thePast)
+                                   .build();
+
+JWT jwt = timeMachine.decode(encodedJWT, VerifierResolver.of(verifier));
+
+assertEquals(jwt.subject(), "f1e33ab3-027f-47c5-bb07-8dd8ab37a2d3");
 ```
 
 ## JSON Web Keys
 
 ### Retrieve keys from a JWKS endpoint
 
+For a one-shot fetch (no caching, no refresh), use `JWKS.fetch`:
+
 ```java
-// From a known JWKS endpoint
-List<JSONWebKey> keys = JSONWebKeySetHelper.retrieveKeysFromJWKS("https://www.googleapis.com/oauth2/v3/certs");
+// One-shot fetch from a known JWKS endpoint
+List<JSONWebKey> keys = JWKS.fetch("https://www.googleapis.com/oauth2/v3/certs");
 
-// From an OpenID Connect well-known configuration endpoint
-List<JSONWebKey> keys = JSONWebKeySetHelper.retrieveKeysFromWellKnownConfiguration("https://accounts.google.com/.well-known/openid-configuration");
-
-// From an OpenID Connect issuer
-List<JSONWebKey> keys = JSONWebKeySetHelper.retrieveKeysFromIssuer("https://accounts.google.com");
+// One-shot fetch via OIDC Discovery -- discover the JWKS URI, then fetch
+OpenIDConnectConfiguration cfg = OpenIDConnect.discover("https://accounts.google.com");
+List<JSONWebKey> discoveredKeys = JWKS.fetch(cfg.jwksURI());
 ```
 
-### Convert keys to and from JWK
+For self-refreshing key management, use the `JWKS` builder API described above.
+
+### Convert a key to JWK
 
 ```java
-// Build a JWK from a public key
-JSONWebKey jwk = JSONWebKey.build(publicKey);
+// From a PublicKey, PrivateKey, Certificate, or PEM-encoded string
+JSONWebKey jwk = JSONWebKey.from(publicKey);
 String json = jwk.toJSON();
 
-// Parse a public key from a JWK
-JSONWebKey jwk = Mapper.deserialize(jsonBytes, JSONWebKey.class);
-PublicKey publicKey = JSONWebKey.parse(jwk);
-
-// Add custom properties
-JSONWebKey jwk = JSONWebKey.build(privateKey)
-                           .add("boom", "goes the dynamite")
-                           .add("more", "cowbell");
+// Strip private parameters for publishing on a JWKS endpoint
+JSONWebKey publicJwk = JSONWebKey.from(privateKey).toPublicJSONWebKey();
 ```
 
-## Key generation helpers
+### Extract a public key from a JWK
+
+```java
+// Any JSONProcessor can parse the bytes to a map; the bundled LatteJSONProcessor
+// is used internally and has zero dependencies.
+byte[] jsonBytes = jwkJSON.getBytes(StandardCharsets.UTF_8);
+Map<String, Object> map = new LatteJSONProcessor().deserialize(jsonBytes);
+JSONWebKey jwk = JSONWebKey.fromMap(map);
+
+PublicKey publicKey = jwk.toPublicKey(); // or JSONWebKey.parse(jwk)
+```
+
+### Build a JWK with custom parameters
+
+`JSONWebKey` is immutable; custom (non-registered) parameters are added through the builder using `parameter(name, value)`. Registered parameters (`kty`, `crv`, `alg`, `x`, `y`, `d`, `n`, `e`, etc.) must use their typed setters.
+
+```java
+JSONWebKey jwk = JSONWebKey.builder()
+                           .kty(KeyType.EC)
+                           .crv("P-256")
+                           .alg(Algorithm.ES256)
+                           .use("sig")
+                           .x("NIWpsIea0qzB22S0utDG8dGFYqEInv9C7ZgZuKtwjno")
+                           .y("iVFFtTgiInz_fjh-n1YqbibnUb2vtBZFs3wPpQw3mc0")
+                           .parameter("boom", "goes the dynamite")
+                           .parameter("more", "cowbell")
+                           .build();
+String json = jwk.toJSON();
+```
+
+### JWK thumbprints
+
+```java
+String sha256Thumbprint = jwk.thumbprintSHA256();
+String sha1Thumbprint   = jwk.thumbprintSHA1();
+```
+
+## Key-pair and secret generation
 
 ```java
 // Generate RSA key pairs (2048, 3072, or 4096 bits)
-KeyPair keyPair = JWTUtils.generate2048_RSAKeyPair();
+KeyPair rsa = KeyPairs.generateRSA_2048();
+
+// Generate RSA PSS key pairs
+KeyPair pss = KeyPairs.generateRSAPSS_2048();
 
 // Generate EC key pairs (P-256, P-384, or P-521)
-KeyPair keyPair = JWTUtils.generate256_ECKeyPair();
+KeyPair ec = KeyPairs.generateEC_256();
 
-// Generate EdDSA key pairs
-KeyPair keyPair = JWTUtils.generate_ed25519_EdDSAKeyPair();
+// Generate EdDSA key pairs (Ed25519 or Ed448)
+KeyPair ed = KeyPairs.generateEd25519();
 
-// Generate HMAC secrets with ideal lengths
-String secret = JWTUtils.generateSHA256_HMACSecret();
+// Generate HMAC secrets with ideal lengths for each digest size
+String hs256Secret = HMACSecrets.generateSHA256();
+String hs384Secret = HMACSecrets.generateSHA384();
+String hs512Secret = HMACSecrets.generateSHA512();
 ```
 
-## PEM encoding and decoding
+## X.509 certificates
+
+Build an X.509 (v3) certificate. `X509.builder()` DER-encodes the certificate fields per RFC 5280, signs them with a `java.security.Signature` matching the requested JWA algorithm, and hands back a parsed `X509Certificate` via the standard JDK `CertificateFactory`.
+
+Supported signature algorithms: `RS256`/`RS384`/`RS512`, `PS256`/`PS384`/`PS512`, `ES256`/`ES384`/`ES512`, `Ed25519`, `Ed448`.
+
+`X509.builder()` accepts `java.security.PublicKey` and `PrivateKey` directly — use a JCA `KeyPairGenerator` (or any other source of JCA key objects) to produce them.
 
 ```java
-// Decode a PEM file to get the private and public keys
-PEM pem = PEM.decode(Files.readAllBytes(Paths.get("private_key.pem")));
-PrivateKey privateKey = pem.privateKey;
-PublicKey publicKey = pem.publicKey;
+// A self-signed EC certificate, valid for one year.
+KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+kpg.initialize(new ECGenParameterSpec("secp256r1"));
+java.security.KeyPair keyPair = kpg.generateKeyPair();
 
-// Encode a key back to PEM format
-String encoded = PEM.encode(privateKey);
+X509Certificate cert = X509.builder()
+                           .serialNumber(BigInteger.valueOf(System.currentTimeMillis()))
+                           .issuer("CN=www.acme.com, O=Acme, C=US")
+                           .subject("CN=www.acme.com, O=Acme, C=US")
+                           .validity(Instant.now(), Instant.now().plus(Duration.ofDays(365)))
+                           .publicKey(keyPair.getPublic())
+                           .signingKey(keyPair.getPrivate())
+                           .signatureAlgorithm(Algorithm.ES256)
+                           .build();
 ```
 
-## Third party JCE providers
+For a CA-signed certificate, set `subject` to the subject DN, `issuer` to the CA's subject DN, `publicKey` to the subject's public key, and `signingKey` to the CA's private key.
 
-Once you have enabled an additional provider such as Bouncy Castle, no change should be necessary to your code:
+Distinguished names are accepted as a comma-separated list of `ATTR=value` pairs (`CN`, `C`, `L`, `ST`, `O`, `OU`); full RFC 4514 DN parsing is not supported.
+
+## Ed25519 and Ed448 interop notes
+
+When using `Ed25519` or `Ed448`, the `alg` JWT header and the JWK `alg` property are equal to the algorithm name. The legacy `EdDSA` value has been deprecated in JOSE in favor of the fully-specified algorithm names `Ed25519` and `Ed448`, and this library will not accept a JWT with `alg: EdDSA` out of the box.
+
+If you need to interoperate with a producer that still emits `alg: EdDSA`, you can support it by implementing your own `Verifier`. The interface has just two methods — `canVerify(Algorithm)` and `verify(byte[], byte[])` — so a small delegating shim that accepts `EdDSA` and dispatches to the appropriate `Ed25519` or `Ed448` verifier is straightforward to write.
+
+Wrap an `EdDSAVerifier` (which is already bound 1:1 to a single curve via its public key) and broaden `canVerify` to also recognize the `EdDSA` header value:
+
+```java
+import org.lattejava.jwt.Algorithm;
+import org.lattejava.jwt.Verifier;
+import org.lattejava.jwt.algorithm.ed.EdDSAVerifier;
+
+// Accepts the legacy JOSE header value [alg: EdDSA] and delegates to the
+// wrapped verifier. The wrapped EdDSAVerifier is locked to one curve at
+// construction time (Ed25519 or Ed448, derived from the public key), so
+// the shim cannot be coerced into using the wrong curve.
+public final class EdDSAAliasVerifier implements Verifier {
+  private final EdDSAVerifier delegate;
+
+  public EdDSAAliasVerifier(EdDSAVerifier delegate) {
+    this.delegate = delegate;
+  }
+
+  @Override
+  public boolean canVerify(Algorithm algorithm) {
+    return algorithm != null
+        && ("EdDSA".equals(algorithm.name()) || delegate.canVerify(algorithm));
+  }
+
+  @Override
+  public void verify(byte[] message, byte[] signature) {
+    delegate.verify(message, signature);
+  }
+}
+```
+
+Use it the same way as any other `Verifier`:
+
+```java
+String pemPublicKey = Files.readString(Paths.get("ed25519_public_key.pem"));
+Verifier verifier = new EdDSAAliasVerifier(EdDSAVerifier.newVerifier(pemPublicKey));
+
+JWT jwt = JWT.decode(encodedJWT, verifier);
+```
+
+The shim accepts both the legacy `EdDSA` and the fully-specified `Ed25519` / `Ed448` header values. Tokens that carry an `alg` other than those three (or that are signed with the wrong curve) still fail at the JCA verify step.
+
+## Third-party JCE providers
+
+Once you have enabled an additional provider such as Bouncy Castle, no change is necessary to your code:
 
 ```java
 // Insert the provider ahead of the JCA
 Security.insertProviderAt(new BouncyCastleFipsProvider(), 1);
 ```
+
+### FIPS observability for SHAKE256
+
+The Ed448 OpenID Connect `at_hash` / `c_hash` paths use FIPS 202 SHAKE256. On the first call, the library probes the JCE for a registered `SHAKE256` service and runs an internal known-answer test against it; on success the provider is cached and used for subsequent calls, otherwise the library falls back to a bundled FIPS 202 implementation. The bundled implementation is functionally correct but is not a FIPS-approved module.
+
+Operators running under a FIPS-approved JCE can confirm which path is in use:
+
+```java
+import org.lattejava.jwt.internal.SHAKE256;
+
+String name = SHAKE256.providerName();
+// non-null  -> name of the JCE provider that satisfied the KAT (e.g. "BCFIPS")
+// null      -> the bundled implementation is in use; not a FIPS-approved code path
+```
+
+This call triggers the one-time probe on first invocation, so the result is stable for the lifetime of the VM.
+
+## Performance
+
+`latte-jwt` is faster than every other JWT library we've benchmarked on the `RS256` decode + verify + validate path, and runs within a few percent of the raw JCA baseline. Full methodology and per-algorithm leaderboards live in the repository's [`benchmarks/BENCHMARKS.md`](https://github.com/latte-java/jwt/blob/main/benchmarks/BENCHMARKS.md).
 
 ## License
 
