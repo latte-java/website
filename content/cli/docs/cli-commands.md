@@ -7,7 +7,7 @@ weight: 12
 
 ## Overview
 
-The Latte CLI provides three built-in commands plus a fallback mechanism for running build targets. The syntax is always:
+The Latte CLI provides five built-in commands (`init`, `install`, `login`, `logout`, and `upgrade`) plus a fallback mechanism for running build targets. The syntax is always:
 
 ~~~~ shell
 $ latte [switches] <command | target>
@@ -21,25 +21,31 @@ For global flags that apply to every invocation, see [CLI Flags](../cli-flags/).
 
 ## init
 
-Initializes a new Latte project in the current directory. Prompts for the project group, name, and license, and creates a `project.latte` plus the standard source directories (`src/main/java`, `src/main/resources`, `src/test/java`, `src/test/resources`).
+Initializes a new Latte project in the current directory by scaffolding it from a template. Prompts for the project group, name, and license. The template is selected by the first positional argument; with no argument the built-in `library` template is used.
 
 ~~~~ shell
-$ latte init
+$ latte init          # library template (default)
+$ latte init web      # the built-in web template
+$ latte init ./tmpl   # a template directory on disk
 ~~~~
 
-### Options
+### Template argument
 
-| Option | Description |
-|--------|-------------|
-| `--template=<path>` | Use a custom project template file. Defaults to `${latte.home}/templates/project.latte`. |
+| Argument                                                   | Resolves to                      |
+|------------------------------------------------------------|----------------------------------|
+| *(omitted)*                                                | The built-in `library` template. |
+| A bare name, e.g. `web`                                    | `$latte.home/templates/<name>`.  |
+| A path (contains `/` or `\`, starts with `~`, or absolute) | That directory on disk.          |
 
 ### Prompts
 
-| Prompt | Format |
-|--------|--------|
-| Group | Dot-separated identifier (e.g. `com.example`). |
-| Name | Alphanumeric plus hyphens (e.g. `my-project`). |
+| Prompt  | Format                                                                                                                            |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------|
+| Group   | Dot-separated identifier (e.g. `com.example`).                                                                                    |
+| Name    | Letters, digits, and hyphens (e.g. `my-project`). Defaults to the current directory name when it is a valid identifier.           |
 | License | An SPDX license identifier (e.g. `Apache-2.0`). Defaults to `MIT` if left blank. See [SPDX licenses](https://spdx.org/licenses/). |
+
+`init` never overwrites existing files — if any target file already exists it fails and writes nothing. See [Create a Project](../create-a-project/) for the full guide, template variables, and the generated layout.
 
 ## install
 
@@ -73,6 +79,29 @@ $ latte install org.testng:testng 6.8.7 test-compile
 
 Repository lookup order is controlled by the project's `workflow` block. See [Workflows](../workflows/) for details on how fetch-time repository precedence works.
 
+## login
+
+Authenticates you with the Latte identity provider so you can publish artifacts to the Latte public repository. Login uses the OAuth 2.0 Authorization Code flow with PKCE and stores the resulting tokens in your global configuration file.
+
+~~~~ shell
+$ latte login                          # production IdP (auth.lattejava.org)
+$ latte login http://localhost:9011    # a local IdP, for testing
+~~~~
+
+Running `login` opens your system browser to the identity provider's authorization page.
+
+See [Authentication](../authentication/) for full details and [Publishing](../publishing/) for how the tokens are used.
+
+## logout
+
+Removes the stored Latte credentials from your global configuration file. All other settings in the file are preserved.
+
+~~~~ shell
+$ latte logout
+~~~~
+
+Prints `You have been logged out.` if you were logged in, or `You are not logged in.` otherwise.
+
 ## upgrade
 
 Upgrades the Latte runtime, plugins, or dependencies defined in `project.latte`.
@@ -83,14 +112,14 @@ $ latte upgrade <subcommand>
 
 ### Subcommands
 
-| Subcommand | Description |
-|------------|-------------|
-| `runtime` | Downloads the latest Latte release and replaces the `bin`, `lib`, and `templates` directories in `$latte.home`. No-op if already on the latest version. |
-| `plugins` | Finds every `loadPlugin(...)` call in `project.latte`, resolves the latest version of each, and rewrites the file. |
-| `dependency <artifact-id> [version]` | Upgrades a single dependency. If `version` is omitted, resolves the latest. |
-| `dependencies` | Resolves the latest version of every dependency in every group and rewrites `project.latte`. |
-| `all` | Runs `runtime`, `plugins`, and `dependencies` in sequence. Outside a project (no `project.latte`), only `runtime` runs; `plugins` and `dependencies` are skipped. |
-| `help` | Prints usage for the upgrade subcommands. |
+| Subcommand                           | Description                                                                                                                                                       |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `runtime`                            | Downloads the latest Latte release and replaces the `bin`, `lib`, and `templates` directories in `$latte.home`. No-op if already on the latest version.           |
+| `plugins`                            | Finds every `loadPlugin(...)` call in `project.latte`, resolves the latest version of each, and rewrites the file.                                                |
+| `dependency <artifact-id> [version]` | Upgrades a single dependency. If `version` is omitted, resolves the latest.                                                                                       |
+| `dependencies`                       | Resolves the latest version of every dependency in every group and rewrites `project.latte`.                                                                      |
+| `all`                                | Runs `runtime`, `plugins`, and `dependencies` in sequence. Outside a project (no `project.latte`), only `runtime` runs; `plugins` and `dependencies` are skipped. |
+| `help`                               | Prints usage for the upgrade subcommands.                                                                                                                         |
 
 ### Examples
 
@@ -114,7 +143,7 @@ $ latte upgrade all
 
 ## Running targets
 
-Any argument that is not a flag is treated as a target name. If the argument is `init`, `install`, or `upgrade` and the project does not define a target of that name, Latte runs the built-in command instead (see [Overview](#overview)). Targets are defined in `project.latte` — see [Targets](../targets/).
+Any argument that is not a flag is treated as a target name. If the argument is one of the built-in commands (`init`, `install`, `login`, `logout`, `upgrade`) and the project does not define a target of that name, Latte runs the built-in command instead (see [Overview](#overview)). Targets are defined in `project.latte` — see [Targets](../targets/).
 
 ~~~~ shell
 $ latte clean

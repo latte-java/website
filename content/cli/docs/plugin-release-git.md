@@ -10,14 +10,14 @@ plugin: true
 
 The Release Git plugin allows you to perform a full release of a project stored in a Git repository. Most of what the plugin needs comes from the `.git` directory or the project file; it has a single optional setting for customizing the tag name.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-release = loadPlugin(id: "org.lattejava.plugin:release-git:0.1.5")
+release = loadPlugin(id: "org.lattejava.plugin:release-git:0.3.0")
 ~~~~ 
 
 ## Settings
@@ -41,9 +41,10 @@ This plugin takes a number of steps to perform a full release of a project. Here
 5. Ensure the project has no local changes.
 6. Ensure the project changes have been pushed to the remote.
 7. Ensure there isn't a tag in the Git repository for the version being released.
-8. Execute all the project's tests.
-9. Creates a tag whose name is the version being released (i.e. `1.0.8`).
-10. Publishes the project's artifacts (publications) using the `publishWorkflow` of the project.
+8. Ensure that you are able to publish to the repository (i.e. you have logged in with `latte login` and have the correct permissions).
+9. Execute all the project's tests.
+10. Creates a tag whose name is the version being released (i.e. `1.0.8`).
+11. Publishes the project's artifacts (publications) using the `publishWorkflow` of the project.
 
 After the release is completed, you should have a Git tag and the project's artifacts should be published to a Latte repository.
 

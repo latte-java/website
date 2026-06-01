@@ -10,14 +10,14 @@ plugin: true
 
 The file plugin provides a number of methods that help you deal with files and archives.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-file = loadPlugin(id: "org.lattejava.plugin:file:0.1.5")
+file = loadPlugin(id: "org.lattejava.plugin:file:0.3.0")
 ~~~~ 
 
 ## FileSets

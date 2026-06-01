@@ -5,6 +5,15 @@ description: Getting Started with Latte is simple. Just download, install and go
 weight: 10
 ---
 
+## Prerequisites
+
+Latte requires **Java 25**. If you don't have it, the easiest way to install it is with [javaenv](/javaenv/):
+
+~~~~ bash
+curl -fsSL https://lattejava.org/javaenv/install | bash
+javaenv install 25
+~~~~
+
 ## Install
 
 Getting started with Latte is simple. You can run the install command for *nix systems or WSL2 systems:
@@ -28,7 +37,7 @@ Unpack the TAR GZ file to a good location (you might need to change the version 
 ~~~~ bash
 $ mkdir -p ~/dev/latte
 $ cd ~/dev/latte
-$ tar -xzvf latte-0.1.2.tar.gz
+$ tar -xzvf latte-0.3.2.tar.gz
 ~~~~
 
 ### Step 3
@@ -47,4 +56,4 @@ Test it out:
 $ latte --version
 ~~~~
 
-For the full list of global flags, see [CLI Flags](../cli-flags/). For the built-in commands (`init`, `install`, `upgrade`), see [CLI Commands](../cli-commands/).
+For the full list of global flags, see [CLI Flags](../cli-flags/). For the built-in commands (`init`, `install`, `login`, `logout`, `upgrade`), see [CLI Commands](../cli-commands/).

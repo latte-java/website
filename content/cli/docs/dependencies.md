@@ -127,7 +127,7 @@ workflow {
 
 The local cache for Latte is stored at **~/.cache/latte** (or `$XDG_CACHE_HOME/latte` if `XDG_CACHE_HOME` is set).
 
-There are 4 main workflow processes you can use from Latte. Each process has different parameters you can specify to control its behavior:
+Latte provides several workflow processes. Each process has different parameters you can specify to control its behavior:
 
 * cache - Fetches and stores dependencies in the local cache
   * directory - (Optional) If this is blank, Latte will use the default location of **~/.cache/latte**
@@ -145,6 +145,9 @@ There are 4 main workflow processes you can use from Latte. Each process has dif
   * accessKeyId - (Required) The S3 access key ID
   * secretAccessKey - (Required) The S3 secret access key
   * region - (Optional) The AWS region. Defaults to `auto` for CloudFlare R2 compatibility
+* latte - Publishes artifacts to the Latte public repository using the tokens from [`latte login`](../authentication/) (publish-only). See [Publishing](../publishing/).
+
+See [Workflows](../workflows/) for the full DSL, including the `mavenCache` process.
 
 Here is an example of using the S3 process:
 

@@ -22,7 +22,7 @@ project(group: "com.example", name: "my-app", version: "1.0.0", licenses: ["MIT"
     standard()
   }
   publishWorkflow {
-    cache()
+    latte()
   }
 
   dependencies { /* ... */ }
@@ -35,21 +35,21 @@ For concrete repository setup examples (public, private, Maven Central, S3), see
 
 ## Fetch vs. publish semantics
 
-| Workflow | Trigger | Behavior |
-|----------|---------|----------|
-| `workflow` | Resolving or downloading a dependency | Tries processes in order, stops at the first success. |
-| `publishWorkflow` | Publishing a built artifact | Runs every process in order; artifact lands in all configured locations. |
+| Workflow          | Trigger                               | Behavior                                                                 |
+|-------------------|---------------------------------------|--------------------------------------------------------------------------|
+| `workflow`        | Resolving or downloading a dependency | Tries processes in order, stops at the first success.                    |
+| `publishWorkflow` | Publishing a built artifact           | Runs every process in order; artifact lands in all configured locations. |
 
 ## The `workflow` block
 
 Inside `workflow { }` you can use any of the following methods:
 
-| Method | Purpose |
-|--------|---------|
-| `standard()` | Shorthand for a sensible default fetch + publish setup. |
-| `fetch { ... }` | Explicitly declare the ordered list of fetch processes. |
-| `publish { ... }` | Explicitly declare the ordered list of publish processes (for the implicit publish side of `workflow`). |
-| `semanticVersions { ... }` | Provide version mappings for artifacts whose Maven versions aren't SemVer-compliant. |
+| Method                     | Purpose                                                                                                 |
+|----------------------------|---------------------------------------------------------------------------------------------------------|
+| `standard()`               | Shorthand for a sensible default fetch + publish setup.                                                 |
+| `fetch { ... }`            | Explicitly declare the ordered list of fetch processes.                                                 |
+| `publish { ... }`          | Explicitly declare the ordered list of publish processes (for the implicit publish side of `workflow`). |
+| `semanticVersions { ... }` | Provide version mappings for artifacts whose Maven versions aren't SemVer-compliant.                    |
 
 ### `standard()`
 
@@ -133,11 +133,11 @@ cache()
 cache(dir: "/custom/latte/cache", mavenDir: "/custom/maven/cache", integrationDir: "/custom/integration/cache")
 ~~~~
 
-| Attribute | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `dir` | No | Latte's cache directory | Override the Latte cache directory. |
-| `mavenDir` | No | `~/.m2/repository` | Override the Maven cache directory. |
-| `integrationDir` | No | Latte's cache directory | Override the integration-build cache directory. |
+| Attribute        | Required | Default                 | Description                                     |
+|------------------|----------|-------------------------|-------------------------------------------------|
+| `dir`            | No       | Latte's cache directory | Override the Latte cache directory.             |
+| `mavenDir`       | No       | `~/.m2/repository`      | Override the Maven cache directory.             |
+| `integrationDir` | No       | Latte's cache directory | Override the integration-build cache directory. |
 
 ### `mavenCache`
 
@@ -148,10 +148,10 @@ mavenCache()
 mavenCache(dir: "/custom/maven/cache")
 ~~~~
 
-| Attribute | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `dir` | No | `~/.m2/repository` | Override the Maven cache directory. |
-| `integrationDir` | No | Latte's cache directory | Override the integration-build cache directory. |
+| Attribute        | Required | Default                 | Description                                     |
+|------------------|----------|-------------------------|-------------------------------------------------|
+| `dir`            | No       | `~/.m2/repository`      | Override the Maven cache directory.             |
+| `integrationDir` | No       | Latte's cache directory | Override the integration-build cache directory. |
 
 ### `url`
 
@@ -162,11 +162,11 @@ url(url: "https://repository.lattejava.org")
 url(url: "https://my-repo.internal.example.com", username: global.repoUsername, password: global.repoPassword)
 ~~~~
 
-| Attribute | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `url` | **Yes** | — | Base URL of the HTTP repository. |
-| `username` | No | — | HTTP Basic username. |
-| `password` | No | — | HTTP Basic password. |
+| Attribute  | Required | Default | Description                      |
+|------------|----------|---------|----------------------------------|
+| `url`      | **Yes**  | —       | Base URL of the HTTP repository. |
+| `username` | No       | —       | HTTP Basic username.             |
+| `password` | No       | —       | HTTP Basic password.             |
 
 ### `maven`
 
@@ -178,11 +178,11 @@ maven(url: "https://repo1.maven.org/maven2")
 maven(url: "https://maven.example.com/releases", username: "user", password: "pass")
 ~~~~
 
-| Attribute | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `url` | No | `https://repo1.maven.org/maven2` | Base URL of the Maven repository. |
-| `username` | No | — | HTTP Basic username. |
-| `password` | No | — | HTTP Basic password. |
+| Attribute  | Required | Default                          | Description                       |
+|------------|----------|----------------------------------|-----------------------------------|
+| `url`      | No       | `https://repo1.maven.org/maven2` | Base URL of the Maven repository. |
+| `username` | No       | —                                | HTTP Basic username.              |
+| `password` | No       | —                                | HTTP Basic password.              |
 
 ### `s3`
 
@@ -193,13 +193,29 @@ s3(endpoint: "https://account-id.r2.cloudflarestorage.com", bucket: "my-repo",
    accessKeyId: global.repoAccessKey, secretAccessKey: global.repoSecretKey)
 ~~~~
 
-| Attribute | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `endpoint` | **Yes** | — | S3-compatible endpoint URL. |
-| `bucket` | **Yes** | — | Bucket name. |
-| `accessKeyId` | **Yes** | — | Access key. |
-| `secretAccessKey` | **Yes** | — | Secret key. |
-| `region` | No | `auto` | Region. Use `auto` for Cloudflare R2; use the actual region for AWS S3. |
+| Attribute         | Required | Default | Description                                                             |
+|-------------------|----------|---------|-------------------------------------------------------------------------|
+| `endpoint`        | **Yes**  | —       | S3-compatible endpoint URL.                                             |
+| `bucket`          | **Yes**  | —       | Bucket name.                                                            |
+| `accessKeyId`     | **Yes**  | —       | Access key.                                                             |
+| `secretAccessKey` | **Yes**  | —       | Secret key.                                                             |
+| `region`          | No       | `auto`  | Region. Use `auto` for Cloudflare R2; use the actual region for AWS S3. |
+
+### `latte`
+
+Adds the Latte publish process, which publishes artifacts to the Latte public repository through its authenticated publish API. Instead of holding storage credentials, it uses the OAuth tokens stored by [`latte login`](../authentication/) to request a short-lived presigned upload URL for each artifact. This is the default publish process for projects created with `latte init`. See [Publishing](../publishing/) for the full workflow and the prerequisite login step.
+
+~~~~ groovy
+publishWorkflow {
+  latte()
+}
+~~~~
+
+| Attribute | Required | Default                     | Description                                                   |
+|-----------|----------|-----------------------------|---------------------------------------------------------------|
+| `apiURL`  | No       | `https://api.lattejava.org` | Base URL of the publish API. Override only for local testing. |
+
+`latte` is **publish-only** — it does not fetch artifacts, so it belongs in `publishWorkflow { }` (or a `publish { }` block) only. It is not part of `standard()`; add it explicitly. Fetching from the public repository is handled by the `url` or `s3` processes.
 
 ## Common patterns
 
@@ -210,7 +226,7 @@ workflow {
   standard()
 }
 publishWorkflow {
-  cache()
+  latte()
 }
 ~~~~
 

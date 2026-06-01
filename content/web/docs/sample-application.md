@@ -13,7 +13,7 @@ This sample wires together:
 - Static asset serving
 - An OIDC-protected `/app` section
 - A JSON API behind authentication and a role check
-- Security headers, CSRF defense, and exception-to-status mapping
+- Security headers, CSRF defense, and exception rendering
 
 It's everything in the docs in one file.
 
@@ -31,15 +31,21 @@ void main() {
                              .issuer("https://auth.example.com")
                              .clientId("notes-app")
                              .clientSecret(System.getenv("OIDC_SECRET"))
-                             .postLoginPage("/app")
-                             .postLogoutPage("/")
                              .build();
-  var oidc = OIDC.create(oidcConfig);
+  var browser = BrowserSettings.builder()
+                               .postLoginPage("/app")
+                               .postLogoutPage("/")
+                               .build();
+  var oidc = OIDC.ssr(oidcConfig, browser, jwt -> jwt);
 
-  // --- Exception -> status --------------------------------------------------
+  // --- Exception -> response ------------------------------------------------
   var errors = new ExceptionHandler(
       Map.of(
-          NoteNotFoundException.class, 404
+          NoteNotFoundException.class, (req, res, e) -> {
+            res.setStatus(404);
+            res.setContentType("application/json");
+            res.getWriter().write("{\"error\":\"note not found\"}");
+          }
       )
   );
 
@@ -47,10 +53,10 @@ void main() {
   web.baseDir(Paths.get("web"));
 
   // --- Global middlewares -------------------------------------------------
-  web.install(new SecurityHeaders());
+  web.install(SecurityHeaders.defaults());
   web.install(new OriginChecks());
   web.install(errors);
-  web.install(oidc);
+  web.install(OIDC.sessionEndpoints(oidcConfig, browser));
 
   // --- Static assets ------------------------------------------------------
   web.files("/static");
@@ -157,10 +163,11 @@ static class NoteStore {
 A few details worth calling out:
 
 - `web.baseDir(Paths.get("web"))` points the static-file middleware at the `web/` directory the project template creates. With `web.files("/static")`, requests for `/static/app.css` are served from `web/static/app.css`
-- The middleware install order is **headers, then CSRF, then exceptions, then OIDC**. That means CSRF rejection happens before any auth or business logic runs, and any exception thrown after that point is mapped to a status code by the time it reaches the HTTP server
+- This is a server-rendered app, so it uses `OIDC.ssr(...)` plus `OIDC.sessionEndpoints(...)`, which owns the `/login`, `/oidc/return`, and `/logout` paths. The `postLoginPage`/`postLogoutPage` destinations live on `BrowserSettings`, not `OIDCConfig`
+- The middleware install order is **headers, then CSRF, then exceptions, then the OIDC session endpoints**. That means CSRF rejection happens before any auth or business logic runs, and any exception thrown after that point is rendered into a response by the time it reaches the HTTP server
 - `oidc.hasAnyRole(...)` and `oidc.hasAllRoles(...)` are passed as **per-route** middlewares, after the body supplier. They run after the prefix-level `oidc.authenticated()` so the JWT is already bound when the role check executes
-- `OIDC.jwt()` is the static accessor that returns the JWT bound to the current request. It throws `UnauthenticatedException` (mapped to 401) if called outside a protected route — handy as a sanity check
-- `Web` is not closed, which leaves the server running. The framework also registers a JVM shutdown hook on `start`, so `Ctrl-C` works
+- `OIDC.jwt()` is the static accessor that returns the JWT bound to the current request. It throws `UnauthenticatedException` (rendered as 401) if called outside a protected route — handy as a sanity check
+- `Web` is not closed, which leaves the server running. The framework also registers a JVM shutdown hook on `start`, so `Ctrl-C` works (and any tasks registered with `web.addShutdownTask(...)` run during shutdown)
 
 ## Running it
 

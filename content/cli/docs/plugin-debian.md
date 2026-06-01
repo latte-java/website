@@ -10,14 +10,14 @@ plugin: true
 
 The Latte Debian Package Management Plugin provides the ability to build Debian package files (.deb).
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-deb = loadPlugin(id: "org.lattejava.plugin:debian:0.1.5")
+deb = loadPlugin(id: "org.lattejava.plugin:debian:0.3.0")
 ~~~~ 
 
 ## Building a Debian package

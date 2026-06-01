@@ -45,12 +45,10 @@ project(group: "com.mycompany", name: "myplugin", version: "0.1.0", license: "Co
 
   dependencies {
     group(name: "provided") {
-      dependency(id: "org.lattejava:latte-core:2.2.0")
-      dependency(id: "org.lattejava:latte-dependency-management:2.2.0")
-      dependency(id: "org.lattejava:latte-utils:2.2.0")
+      dependency(id: "org.lattejava:cli:0.3.2")
     }
     group(name: "test-compile", export: false) {
-      dependency(id: "org.testng:testng:6.8.7")
+      dependency(id: "org.testng:testng:7.12.0")
     }
   }
 
@@ -60,19 +58,19 @@ project(group: "com.mycompany", name: "myplugin", version: "0.1.0", license: "Co
 }
 
 // Plugins
-dependency = loadPlugin(id: "org.lattejava.plugin:dependency:2.0.0")
-groovy = loadPlugin(id: "org.lattejava.plugin:groovy:2.0.0")
-groovyTestNG = loadPlugin(id: "org.lattejava.plugin:groovy-testng:2.0.0")
-release = loadPlugin(id: "org.lattejava.plugin:release-git:2.0.0")
+dependency = loadPlugin(id: "org.lattejava.plugin:dependency:0.3.0")
+groovy = loadPlugin(id: "org.lattejava.plugin:groovy:0.3.0")
+groovyTestNG = loadPlugin(id: "org.lattejava.plugin:groovy-testng:0.3.0")
+release = loadPlugin(id: "org.lattejava.plugin:release-git:0.3.0")
 
 // Plugin settings
 groovy.settings.groovyVersion = "5.0"
-groovy.settings.javaVersion = "17"
+groovy.settings.javaVersion = "25"
 groovy.settings.jarManifest = [
     "Latte-Plugin-Class": "com.mycompany.MyPlugin"
 ]
 groovyTestNG.settings.groovyVersion = "5.0"
-groovyTestNG.settings.javaVersion = "17"
+groovyTestNG.settings.javaVersion = "25"
 
 target(name: "clean", description: "Cleans the project") {
   groovy.clean()

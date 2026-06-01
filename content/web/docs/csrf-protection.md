@@ -50,9 +50,9 @@ A request whose `Origin` matches any URI in the list passes.
 `OriginChecks` should sit early in the global middleware chain, just after `SecurityHeaders`. Installing it once on the root `Web` covers every route, which is what you want — CSRF defense is a default-on protection, not a per-endpoint opt-in.
 
 ~~~~ java
-web.install(new SecurityHeaders());
+web.install(SecurityHeaders.defaults());
 web.install(new OriginChecks());
-web.install(oidc);
+web.install(OIDC.sessionEndpoints(config));
 ~~~~
 
 ## Limitations

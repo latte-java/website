@@ -7,42 +7,47 @@ weight: 20
 
 ## Directory structure
 
-After running `latte init web` you'll have a layout like this:
+After running `latte init web` (with group `org.example`, name `hello-web`) you'll have a layout like this:
 
 ~~~~
 hello-web/
+├── .gitignore
 ├── project.latte
 ├── src/
 │   ├── main/
 │   │   └── java/
-│   │       └── Main.java
+│   │       ├── module-info.java
+│   │       └── org/example/hello_web/Main.java
 │   └── test/
 │       └── java/
-│           └── MainTest.java
+│           ├── module-info.java
+│           └── org/example/hello_web/tests/MainTest.java
 └── web/
-    └── static/
+    ├── static/
+    └── templates/
+        └── index.jte
 ~~~~
 
-The `web/static` directory is intended for static assets — CSS, JavaScript, images, and HTML files served by the `StaticResources` middleware. See the [Static Files](../static-files/) page for how to wire it up.
+The project is a JPMS module with a [separate test module](../../../cli/docs/plugin-java/#modules-jpms). The `web/static` directory holds static assets (CSS, JavaScript, images) served by the `StaticResources` middleware, and `web/templates` holds the [JTE templates](../templates/) the app renders. See [Static Files](../static-files/) and [Templates](../templates/) for how they're wired up.
 
 ## Project file
 
 `project.latte` is a Groovy DSL that the Latte CLI reads. The template wires up:
 
-- A single compile dependency on `org.lattejava:web:0.1.0` (which transitively pulls in `org.lattejava:http` and `org.lattejava:jwt`)
+- A compile dependency on `org.lattejava:web` (which transitively pulls in `org.lattejava:http` and `org.lattejava:jwt`)
 - A test dependency on TestNG
-- The `dependency`, `java`, `java-testng`, and `release-git` plugins
+- The `dependency`, `idea`, `java`, `java-testng`, and `release-git` plugins
 - Targets for `clean`, `build`, `test`, `run`, `int`, and `release`
 
-The most relevant target for development is `run`, which uses JEP 512's `java`-based source launcher to start the server without a separate compile step:
+The most relevant target for development is `run`, which builds the project and launches the `Main` class:
 
 ~~~~ groovy
-target(name: "run", description: "Runs the web server") {
-  java.run(main: "src/main/java/Main.java")
+target(name: "run", description: "Runs the web server", dependsOn: ["build"]) {
+  java.run(main: "org.example.hello_web.Main")
 }
 ~~~~
 
-Because the `java` plugin is configured with `moduleBuild = true`, your application runs on the module path with `org.lattejava.web` and its transitive dependencies resolved as named modules. That's what makes `import module org.lattejava.web` work in `Main.java`.
+Because the `java` plugin builds the project as a module (a `module-info.java` is present), your application runs on the module path with `org.lattejava.web` and its transitive dependencies resolved as named modules. That's what makes `import module org.lattejava.web` work in `Main.java`. See the [Java Plugin](../../../cli/docs/plugin-java/) docs for the `run` target's full options.
 
 ## Common commands
 

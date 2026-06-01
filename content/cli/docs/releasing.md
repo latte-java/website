@@ -25,7 +25,19 @@ Luckily, the [Release Git Plugin](/cli/docs/plugin-release-git/) does most of th
 
 ## Publish workflow
 
-First, add the publish workflow. This is the process that Latte uses to publish the project's artifacts. Here's a sample publish workflow:
+First, add the publish workflow. This is the process that Latte uses to publish the project's artifacts. The recommended option for open-source projects is to publish to the Latte public repository:
+
+~~~~ groovy
+project(...) {
+  publishWorkflow {
+    latte()
+  }
+}
+~~~~
+
+This requires you to authenticate first with [`latte login`](../authentication/) — if no login token is present the release fails with `You are not logged in to the Latte repository. Run [latte login] before publishing.` See [Publishing](../publishing/) for the full workflow.
+
+To publish to your own S3-compatible storage instead, use the `s3` process:
 
 ~~~~ groovy
 project(...) {
@@ -36,14 +48,14 @@ project(...) {
 }
 ~~~~ 
 
-This workflow instructs Latte to publish the project's artifacts to the S3-compatible bucket. This works with any S3-compatible storage provider such as AWS S3, CloudFlare R2, MinIO, and others.
+This works with any S3-compatible storage provider such as AWS S3, CloudFlare R2, MinIO, and others.
 
 ## Release Git plugin
 
 Next, include the [Release Git Plugin](/cli/docs/plugin-release-git/) in the project file:
 
 ~~~~ groovy
-release = loadPlugin(id: "org.lattejava.plugin:release-git:0.1.0")
+release = loadPlugin(id: "org.lattejava.plugin:release-git:0.3.0")
 ~~~~ 
 
 ## Target

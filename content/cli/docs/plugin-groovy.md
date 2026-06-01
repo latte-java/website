@@ -10,7 +10,7 @@ plugin: true
 
 The Groovy plugin allows you to build Groovy projects. This plugin includes methods for compiling, jarring, and cleaning a Groovy project.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 
 ## Loading the plugin
@@ -18,7 +18,7 @@ The Groovy plugin allows you to build Groovy projects. This plugin includes meth
 Here is how you load this plugin:
 
 ~~~~ groovy
-groovy = loadPlugin(id: "org.lattejava.plugin:groovy:0.1.5")
+groovy = loadPlugin(id: "org.lattejava.plugin:groovy:0.3.0")
 ~~~~ 
 
 ## Layout

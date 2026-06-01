@@ -10,14 +10,14 @@ plugin: true
 
 The Latte Dependency Management Plugin provides the ability to work with project dependencies.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-dependency = loadPlugin(id: "org.lattejava.plugin:dependency:0.1.5")
+dependency = loadPlugin(id: "org.lattejava.plugin:dependency:0.3.0")
 ~~~~ 
 
 ## Dependencies

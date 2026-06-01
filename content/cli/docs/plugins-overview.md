@@ -42,8 +42,8 @@ Latte plugins are simple objects. A project file can invoke methods on the objec
 Here is an example of how simple it is to compile Java code using Latte:
 
 ~~~~ groovy
-java = loadPlugin("org.lattejava.plugin:java:2.2.0")
-java.settings.jdkVersion = "17"
+java = loadPlugin("org.lattejava.plugin:java:0.3.0")
+java.settings.javaVersion = "25"
 
 target(name: "build") {
   java.compile()

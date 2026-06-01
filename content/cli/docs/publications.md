@@ -68,9 +68,19 @@ project(group: "org.example", name: "my-project", version: "1.0", licenses: ["Ap
 
 ## Publish workflow
 
-When projects are released, the **publishWorkflow** is used to transfer the project's publications to a location that other project's can find them. This is different than an **integration** build for a project. Integration builds use the main **workflow** of the project and not the **publishWorkflow**.
+When projects are released, the **publishWorkflow** is used to transfer the project's publications to a location that other project's can find them. This is different from an **integration** build for a project. Integration builds use the main **workflow** of the project and not the **publishWorkflow**.
   
-Here's how you define a **publishWorkflow** using S3-compatible storage:
+The simplest option — and the default for projects created with `latte init` — is to publish to the Latte public repository with the `latte()` process:
+
+~~~~ groovy
+  publishWorkflow {
+    latte()
+  }
+~~~~
+
+This requires you to run [`latte login`](../authentication/) first; see [Publishing](../publishing/) for the full workflow.
+
+To publish to your own S3-compatible storage instead, define the **publishWorkflow** like this:
 
 ~~~~ groovy
 project(group: "org.example", name: "my-project", version: "1.0", licenses: ["Apache-2.0"]) {

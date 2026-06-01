@@ -27,9 +27,9 @@ You wire them together by registering the route with a body-aware overload:
 web.post("/users", createUserHandler, JSONBodySupplier.of(NewUser.class));
 ~~~~
 
-The supplier is invoked first. If it returns `null` it has signalled a handled error condition (it set the status, etc.) and the handler is **not** called. If it returns a value, that value is passed to the handler.
+The supplier is invoked first, and whatever it returns — including `null` — is passed straight to the handler. A `null` therefore means "an empty but valid body," and the handler is given the chance to deal with it. A supplier signals a *failure* by **throwing** an exception (typically an `HTTPException` subtype such as `BadRequestException`), not by returning `null`. See [Exception Handling](../exception-handling/) for how those exceptions become responses.
 
-This pattern keeps parsing concerns out of your handler: validation, content-type checking, and error responses live in the supplier.
+This pattern keeps parsing concerns out of your handler: validation, content-type checking, and error reporting live in the supplier.
 
 ## JSON bodies
 
@@ -55,7 +55,7 @@ void main() {
 }
 ~~~~
 
-If the JSON is malformed or doesn't match the target type, `JSONBodySupplier` sets the response status to `400 Bad Request`, returns `null`, and the handler is skipped. To return a richer error payload, subclass `JSONBodySupplier` or write your own supplier.
+If the JSON is malformed or doesn't match the target type, `JSONBodySupplier` throws `BadRequestException`, which the framework renders as `400 Bad Request` (even without an installed `ExceptionHandler`). An empty request body returns `null`, and your handler is invoked with that `null`. To return a richer error payload, register a renderer for `BadRequestException` (see [Exception Handling](../exception-handling/)) or write your own supplier.
 
 You can also pass a custom `ObjectMapper` (for example, to register modules):
 
@@ -77,22 +77,19 @@ BodySupplier<String> stringSupplier = (req, res) -> {
 web.post("/echo", (req, res, body) -> res.getWriter().write(body), stringSupplier);
 ~~~~
 
-A more interesting one validates while it parses:
+A more interesting one validates while it parses, throwing to reject a bad body:
 
 ~~~~ java
 BodySupplier<NewUser> validatedSupplier = (req, res) -> {
   NewUser user = new ObjectMapper().readValue(req.getInputStream(), NewUser.class);
   if (user.email() == null || !user.email().contains("@")) {
-    res.setStatus(422);
-    res.setContentType("application/json");
-    res.getWriter().write("{\"error\":\"invalid email\"}");
-    return null;
+    throw new HTTPException(422, "invalid email");
   }
   return user;
 };
 ~~~~
 
-By returning `null` after writing a response, the supplier short-circuits the request without your handler having to know about validation.
+By throwing, the supplier short-circuits the request without your handler having to know about validation; the exception is turned into a response by the [exception handling](../exception-handling/) machinery.
 
 ## When you don't need a supplier
 

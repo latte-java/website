@@ -10,14 +10,14 @@ plugin: true
 
 The Java plugin allows you to build Java projects. This plugin includes methods for compiling, JARring, and cleaning a Java project.
 
-**LATEST VERSION: 0.1.6**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-java = loadPlugin(id: "org.lattejava.plugin:java:0.1.6")
+java = loadPlugin(id: "org.lattejava.plugin:java:0.3.0")
 ~~~~ 
 
 ## Layout
@@ -128,6 +128,35 @@ This defines that the project's `compile` and `provided` dependency groups shoul
 | transitive       | Determines if transitive dependencies are included or not                                 | boolean       | true     |
 | fetchSource      | Determines if the source for the dependencies or downloaded or not                        | boolean       | true     |
 | transitiveGroups | The transitive dependency groups to fetch. This is only used if transitive is set to true | List\<String> | false    |
+
+### Annotation processing
+
+The Java plugin supports Java annotation processors (for example, code generators like record-builder, Dagger, or MapStruct). Processors are resolved as JPMS modules and passed to `javac` via `--processor-module-path` so that the compiler auto-discovers them through `ServiceLoader` (each processor module must `provides javax.annotation.processing.Processor`).
+
+To enable annotation processing, declare a dependency group named `compile-processors` in your `project.latte` and add the processor artifacts to it. The annotation API (the classes your code references, such as `@RecordBuilder`) goes in the normal `compile` group (or `compile-only` if you don't need the JAR in the classpath/module-path at runtime), while the processor itself goes in `compile-processors`:
+
+~~~~ groovy
+dependencies {
+  group(name: "compile") {
+    dependency(id: "io.soabase.record-builder:record-builder-core:47")
+  }
+  group(name: "compile-processors") {
+    dependency(id: "io.soabase.record-builder:record-builder-processor:47")
+  }
+}
+~~~~
+
+The processors run during both main and test compilation. Projects that do not declare a `compile-processors` group are unaffected — no `--processor-module-path` is added and the `javac` command is unchanged.
+
+The group(s) used for processors are controlled by the `processorDependencies` setting. It uses the same List-of-Maps shape as `mainDependencies`/`testDependencies` (see [Compile dependencies](#compile-dependencies)). The default resolves the `compile-processors` group transitively through the `compile` and `runtime` groups so that each processor's own library dependencies join the module graph:
+
+~~~~ groovy
+java.settings.processorDependencies = [
+    [group: "compile-processors", transitive: true, fetchSource: false, transitiveGroups: ["compile", "runtime"]]
+  ]
+~~~~
+
+Annotation processing is orthogonal to the JPMS [module build](#modules-jpms) settings — it never affects the `-classpath` vs `--module-path` selection used for your sources.
 
 ## Modules (JPMS)
 

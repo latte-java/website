@@ -9,7 +9,7 @@ weight: 31
 
 Latte's dependency management system uses repositories to download the artifacts a project depends on. These repositories are usually HTTP web servers.
 
-The `workflow { }` and `publishWorkflow { }` DSL shown on this page is covered in full on the [Workflows](../workflows/) page — including the complete list of processes (`cache`, `url`, `maven`, `s3`, `mavenCache`) and their attributes.
+The `workflow { }` and `publishWorkflow { }` DSL shown on this page is covered in full on the [Workflows](../workflows/) page — including the complete list of processes (`cache`, `mavenCache`, `url`, `maven`, `s3`, and `latte`) and their attributes.
 
 In most commercial environments, project's will use 2 different repositories:
 
@@ -30,6 +30,18 @@ workflow {
   standard()
 }
 ~~~~
+
+To publish your own libraries to this repository, see [Publishing](../publishing/).
+
+### Version search
+
+The Latte public repository exposes a search endpoint that the `install` and `upgrade` commands use to resolve "the latest version" of an artifact. It maps a `group:project` identifier to the repository and returns the available versions:
+
+~~~~
+GET https://api.lattejava.org/repository/search?id=<group:project>&latest=true
+~~~~
+
+The response is JSON of the form `{"id": "...", "versions": ["x.y.z"]}` (and a `404` when the artifact is not found). You normally never call this directly — it powers `latte install org.example:my-lib` (no version) and `latte upgrade dependencies`.
 
 ## Maven Central
 
@@ -124,16 +136,16 @@ The standard repository layout uses the artifact group, project, name, version, 
 
 ~~~~ 
 org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar
-org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar.md5
+org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar.sha256
 org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar.amd
-org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar.amd.md5
+org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1.jar.amd.sha256
 org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1-src.jar
-org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1-src.jar.md5
+org/apache/commons/commons-collections/3.2.1/commons-collections-3.2.1-src.jar.sha256
 ~~~~ 
 
 Project's can publish multiple artifacts, each with different names. The directory name remains the same.
 
-Latte uses MD5 files to ensure that the artifacts are valid when they are downloaded.
+Latte repositories use SHA-256 checksum files (the `.sha256` companion next to each artifact, containing a lowercase 64-character hex digest) to verify that artifacts are valid when they are downloaded. The Artifact Meta Data (`.amd`) files get a `.sha256` companion as well. When Latte fetches from a Maven repository it instead verifies the Maven-standard SHA-1 checksum, falling back to MD5 when SHA-1 is unavailable.
 
 ## Manually building AMD files
 

@@ -10,14 +10,14 @@ plugin: true
 
 The Latte Database Plugin provides the ability to work with databases.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-database = loadPlugin(id: "org.lattejava.plugin:database:0.1.5")
+database = loadPlugin(id: "org.lattejava.plugin:database:0.3.0")
 ~~~~ 
 
 ## Configuring the plugin

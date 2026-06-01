@@ -76,6 +76,20 @@ The router distinguishes "no route at this path" from "route exists but not for 
 
 You don't write any code for these — `Web` handles them automatically.
 
+### Customizing the 404
+
+To replace the default 404 with your own response (a branded error page, a JSON payload, etc.), register a missing-route handler on the root `Web`:
+
+~~~~ java
+web.missingHandler((req, res) -> {
+  res.setStatus(404);
+  res.setContentType("text/html; charset=utf-8");
+  res.getWriter().write("<h1>Not found</h1>");
+});
+~~~~
+
+Any prefix middlewares that match the unmatched path still run before the missing handler. `missingHandler` can only be set on the root `Web` (not a `prefix` child) and only before `start` — otherwise it throws `IllegalStateException`.
+
 ## Lifecycle constraints
 
 Routes and middleware can only be registered before `start(int)` is called. Attempting to register after the server has started throws `IllegalStateException`. The lock is shared across parent and child `Web` instances (the ones created by `prefix`), so once any `start` is called the entire registration tree is frozen.

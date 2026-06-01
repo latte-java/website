@@ -16,17 +16,22 @@ Welcome to the Latte `web` documentation. The pages below walk through everythin
 
 - [Routing](routing/) - Verbs, path parameters, prefixes, and how 404/405 are handled
 - [Handlers](handlers/) - Writing request handlers and working with `HTTPRequest` and `HTTPResponse`
+- [Configuration](configuration/) - Reading settings from env vars, system properties, and files
 - [Request Bodies](request-bodies/) - `BodyHandler`, `BodySupplier`, and the built-in JSON supplier
 - [Middleware](middleware/) - The pipeline, ordering, and writing your own
+- [Templates](templates/) - Rendering JTE templates to the response
+- [Cookies](cookies/) - Reading, writing, and encrypting cookies
+- [Logging](logging/) - The swappable logger used by the web and HTTP layers
 
 ## Production Features
 
 - [Static Files](static-files/) - Serving assets with caching and traversal protection
-- [Security Headers](security-headers/) - The `SecurityHeaders` middleware and what each header does
+- [Security Headers](security-headers/) - The `SecurityHeaders` middleware, CSP builder, and what each header does
 - [CSRF Protection](csrf-protection/) - The `OriginChecks` middleware and `SameSite` cookie strategy
-- [Exception Handling](exception-handling/) - Mapping exceptions to HTTP status codes
-- [OIDC Authentication](oidc/) - Login, callback, refresh, logout, and role-based access
+- [Exception Handling](exception-handling/) - Rendering exceptions into HTTP responses
+- [OIDC Authentication](oidc/) - SSR, SPA, and API auth — login, refresh, logout, and role-based access
 
 ## End-to-End
 
+- [Testing](testing/) - The `WebTest` client and `OIDCTestFixture` harness
 - [Sample Application](sample-application/) - A complete server pulling all of the above together

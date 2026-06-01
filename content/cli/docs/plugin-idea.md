@@ -10,14 +10,14 @@ plugin: true
 
 The IDEA plugin allows you to update your IntelliJ IDEA module file (IML) when your project's dependencies change. This plugin does not currently generate IntelliJ IDEA project files (IPR).
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-idea = loadPlugin(id: "org.lattejava.plugin:idea:0.1.5")
+idea = loadPlugin(id: "org.lattejava.plugin:idea:0.3.0")
 ~~~~ 
 
 ## Settings

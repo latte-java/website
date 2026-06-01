@@ -10,14 +10,14 @@ plugin: true
 
 The Java TestNG plugin allows you to execute TestNG tests in a Java project. It is designed to work alongside the [Java plugin](plugin-java), which compiles and packages the sources that this plugin runs tests against. The layout, JPMS detection, and source directories described here mirror the Java plugin and share the same defaults.
 
-**LATEST VERSION: 0.1.6**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-javaTestNG = loadPlugin(id: "org.lattejava.plugin:java-testng:0.1.6")
+javaTestNG = loadPlugin(id: "org.lattejava.plugin:java-testng:0.3.0")
 ~~~~ 
 
 ## Settings

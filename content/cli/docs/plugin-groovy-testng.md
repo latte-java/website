@@ -10,14 +10,14 @@ plugin: true
 
 The Groovy TestNG plugin allows you to execute TestNG tests in a Groovy project.
 
-**LATEST VERSION: 0.1.5**
+**LATEST VERSION: 0.3.0**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-groovyTestNG = loadPlugin(id: "org.lattejava.plugin:groovy-testng:0.1.5")
+groovyTestNG = loadPlugin(id: "org.lattejava.plugin:groovy-testng:0.3.0")
 ~~~~ 
 
 ## Settings

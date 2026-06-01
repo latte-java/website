@@ -31,7 +31,7 @@ There are three scopes:
 **Global** — runs for every request. Install on the root `Web`:
 
 ~~~~ java
-web.install(new SecurityHeaders());
+web.install(SecurityHeaders.defaults());
 web.install(new OriginChecks());
 ~~~~
 
@@ -113,6 +113,16 @@ Middleware addRequestId = (req, res, chain) -> {
 
 > **Warning:** This only works if the response hasn't been flushed yet. Once any downstream middleware or handler writes to `res.getWriter()` or `res.getOutputStream()` and the bytes leave the server (or the response is explicitly flushed), the headers and status are committed and any subsequent `setHeader` / `setStatus` call is a no-op. If you need a header to be present, set it **before** calling `chain.next(...)`, or make sure no downstream code flushes early.
 
+## Scoping a global middleware to a prefix
+
+Sometimes you want a middleware that runs at the top of the chain — before any prefix middlewares — but only for a subset of paths. `FilteredMiddleware` wraps another middleware and only applies it when the request path starts with a prefix; otherwise it passes straight through:
+
+~~~~ java
+web.install(new FilteredMiddleware("/api", requireApiKey));
+~~~~
+
+Here `requireApiKey` runs for any request under `/api`, but `/`, `/login`, and everything else skip it. This differs from a `prefix("/api", ...)` block in that the middleware keeps its global position in the chain rather than being nested inside the prefix's routing.
+
 ## Built-in middleware
 
 The framework ships several middlewares you'll use in production:
@@ -120,7 +130,8 @@ The framework ships several middlewares you'll use in production:
 - [`SecurityHeaders`](../security-headers/) — strict default response headers
 - [`OriginChecks`](../csrf-protection/) — CSRF defense via `Origin` validation
 - [`StaticResources`](../static-files/) — serves files from disk
-- [`ExceptionHandler`](../exception-handling/) — maps exceptions to status codes
-- [`OIDC`](../oidc/) — OpenID Connect login, callback, refresh, and logout
+- [`ExceptionHandler`](../exception-handling/) — renders exceptions into HTTP responses
+- `FilteredMiddleware` — applies a wrapped middleware only to a path prefix (above)
+- [OIDC](../oidc/) — OpenID Connect authentication. The session endpoints (`OIDC.sessionEndpoints(...)`) and the protection middlewares (`oidc.authenticated()`, `oidc.hasAnyRole(...)`, …) are all middlewares.
 
 Each is documented on its own page.
