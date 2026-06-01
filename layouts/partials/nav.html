@@ -39,6 +39,8 @@
 
         <a href="{{ .Site.Params.github }}" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" target="_blank" rel="noopener">GitHub</a>
 
+        <a href="https://app.lattejava.org" class="inline-flex items-center px-4 py-2 text-sm font-medium bg-accent-500 hover:bg-accent-600 text-white rounded-lg transition-colors">Log in</a>
+
         {{ partial "theme-toggle.html" . }}
       </div>
 
@@ -66,8 +68,9 @@
           <a href="{{ .RelPermalink }}" class="block px-2 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">{{ $entry.Name }}</a>
         {{ end }}
       {{ end }}
-      <div class="border-t border-slate-200 dark:border-slate-800 pt-2 mt-2">
+      <div class="border-t border-slate-200 dark:border-slate-800 pt-2 mt-2 space-y-2">
         <a href="{{ .Site.Params.github }}" class="block px-2 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://app.lattejava.org" class="block px-2 py-2 text-sm font-medium text-center bg-accent-500 hover:bg-accent-600 text-white rounded transition-colors">Log in</a>
       </div>
     </div>
   </div>
