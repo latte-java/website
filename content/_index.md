@@ -32,3 +32,27 @@ mkdir my-project && cd my-project
 ```bash
 latte init
 ```
+
+_Write some code...._
+
+### 4. Login into Latte
+
+```bash
+latte login
+```
+
+### 5. Create a Group
+
+Visit https://app.lattejava.org/app/groups/new to create your Group in the Latte repository.
+
+_If you use a reverse-DNS Group, you'll also need to verify your domain._
+
+### 6. Release & public the project
+
+```bash
+latte release
+```
+
+That's it!
+
+Your project will now have a tag based on the version in `project.latte` and it will be released to the Latte repository for the world to enjoy.
