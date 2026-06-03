@@ -1,0 +1,325 @@
+{{ define "main" }}
+  <!-- Hero -->
+  <section class="relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white">
+        Java got complicated.<br class="hidden sm:block"> We're uncomplicating it.
+      </h1>
+      <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-400">
+        The language is great. The tooling and ecosystem that grew around it turned into a
+        second job — build files you fight, releases that take a weekend, libraries that drag
+        in the world, and ceremony for the simplest things. Latte brings the simple back.
+      </p>
+    </div>
+  </section>
+
+  <div id="why-content">
+
+    <!-- 1. Dependency management -->
+    <section class="border-b border-slate-200 dark:border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Dependency management is a second job</h2>
+        <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+          Maven wants walls of XML. Gradle makes you pick between two DSLs and then guess which
+          plugin and which configuration block does what. Either way you spend more time feeding
+          the build tool than writing code. Latte uses one readable file and two commands.
+        </p>
+        {{ partial "why-compare.html" (dict
+          "beforeLabel" "Maven — pom.xml"
+          "beforeBlocks" (slice (dict "lang" "xml" "code" `<project>
+  <!-- groupId, artifactId, version, properties... -->
+  <dependencies>
+    <dependency>
+      <groupId>org.lattejava</groupId>
+      <artifactId>web</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration><release>25</release></configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>`))
+          "beforeNote" "...and a separate settings.xml, a wrapper script, and a plugin for anything beyond compiling."
+          "afterLabel" "Latte — project.latte"
+          "afterBlocks" (slice (dict "lang" "groovy" "code" `dependency(id: "org.lattejava:web:0.1.0")`))
+          "afterNote" "latte install to fetch it, latte build to build. That's the whole story."
+        ) }}
+      </div>
+    </section>
+
+    <!-- 2. Publishing -->
+    <section class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Publishing an artifact shouldn't take a weekend</h2>
+        <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+          Shipping a library to Maven Central means a Sonatype account, a published GPG key,
+          signed jars, generated sources and javadoc jars, and the staging "close &amp; release"
+          ritual. Most people give up the first time. With Latte you log in, create a Group, and
+          release.
+        </p>
+        {{ partial "why-compare.html" (dict
+          "beforeLabel" "Maven Central"
+          "beforeBlocks" (slice
+            (dict "caption" "pom.xml" "lang" "xml" "code" `<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-source-plugin</artifactId>
+      <version>3.3.1</version>
+      <executions><execution><id>attach-sources</id>
+        <goals><goal>jar-no-fork</goal></goals></execution></executions>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-javadoc-plugin</artifactId>
+      <version>3.11.2</version>
+      <executions><execution><id>attach-javadocs</id>
+        <goals><goal>jar</goal></goals></execution></executions>
+    </plugin>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-gpg-plugin</artifactId>
+      <version>3.2.7</version>
+      <executions><execution><id>sign-artifacts</id>
+        <phase>verify</phase><goals><goal>sign</goal></goals></execution></executions>
+    </plugin>
+    <plugin>
+      <groupId>org.sonatype.central</groupId>
+      <artifactId>central-publishing-maven-plugin</artifactId>
+      <version>0.7.0</version>
+      <extensions>true</extensions>
+    </plugin>
+  </plugins>
+</build>`)
+            (dict "caption" "shell" "lang" "bash" "code" `# One-time: publish a GPG key, add a Central Portal token to settings.xml
+gpg --gen-key
+gpg --keyserver keys.openpgp.org --send-keys <KEY_ID>
+
+# Every release:
+git tag v1.0.0 && git push --tags
+mvn clean deploy
+# then sign in to central.sonatype.com and click "Publish"`))
+          "beforeNote" "A Sonatype account, a GPG key published to a keyserver, credentials in settings.xml, and the staging close & release dance — before mvn deploy publishes anything."
+          "afterLabel" "Latte"
+          "afterBlocks" (slice
+            (dict "caption" "project.latte" "lang" "groovy" "code" `release = loadPlugin(id: "org.lattejava.plugin:release-git:0.3.0")
+
+project(group: "org.example", name: "my-lib", version: "1.0.0", licenses: ["Apache-2.0"]) {
+  publishWorkflow {
+    latte()
+  }
+}
+
+target(name: "release", description: "Releases a full version of the project", dependsOn: ["test"]) {
+  release.release()
+}`)
+            (dict "caption" "shell" "lang" "bash" "code" `latte login     # once
+
+latte release`))
+          "afterNote" "The release target tags the version from project.latte and publishes to the Latte repository — no keys, no portal, no manual publish step."
+        ) }}
+      </div>
+    </section>
+
+    <!-- 3. Bloated libraries -->
+    <section class="border-b border-slate-200 dark:border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Libraries shouldn't drag in the world</h2>
+        <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+          Add one library and inherit a dozen more — Jackson, Bouncy Castle, Commons, Guava — each
+          a version conflict and a chunk of supply-chain surface you now own. Latte's libraries ship
+          with zero runtime dependencies. Pure Java, just add a VM.
+        </p>
+        {{ partial "why-compare.html" (dict
+          "beforeLabel" "A typical JWT library — mvn dependency:tree"
+          "beforeBlocks" (slice (dict "lang" "text" "code" `com.auth0:java-jwt:4.4.0
+\- com.fasterxml.jackson.core:jackson-databind:2.15.2
+   +- com.fasterxml.jackson.core:jackson-annotations:2.15.2
+   \- com.fasterxml.jackson.core:jackson-core:2.15.2`))
+          "beforeNote" "Every transitive jar is a version you must reconcile and a dependency you must trust."
+          "afterLabel" "Latte JWT — mvn dependency:tree"
+          "afterBlocks" (slice (dict "lang" "text" "code" `org.lattejava:jwt:0.1.1
+(no dependencies)`))
+          "afterNote" "No Jackson, Bouncy Castle, Apache Commons, or Guava. The http server is zero-dependency too."
+        ) }}
+      </div>
+    </section>
+
+    <!-- 4. Heavyweight frameworks -->
+    <section class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Frameworks shouldn't be heavyweight</h2>
+        <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+          Wiring up one endpoint shouldn't mean a package layout, a wall of imports, component
+          annotations, a reflection-driven container injecting your objects, and a build plugin
+          and launch command just to boot a server. Latte
+          <code class="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-sm">web</code>
+          is a real server in a handful of lines — plain methods, plain calls, no reflection, and
+          one method call to start listening.
+        </p>
+        {{ partial "why-compare.html" (dict
+          "beforeLabel" "Spring Boot"
+          "beforeBlocks" (slice
+            (dict "caption" "DemoApplication.java" "lang" "java" "code" `package com.example.demo;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+@SpringBootApplication
+public class DemoApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(DemoApplication.class, args);
+  }
+}
+
+@Service
+class GreetingService {
+  String greet(String name) {
+    return "Hello, " + name + "!";
+  }
+}
+
+@RestController
+class GreetingController {
+  private final GreetingService greetings;
+
+  @Autowired
+  GreetingController(GreetingService greetings) {
+    this.greetings = greetings;
+  }
+
+  @GetMapping("/greeting/{name}")
+  public String greeting(@PathVariable String name) {
+    return greetings.greet(name);
+  }
+}`)
+            (dict "caption" "src/main/resources/application.properties" "lang" "properties" "code" `spring.application.name=demo
+server.port=8080`)
+            (dict "caption" "shell" "lang" "bash" "code" `# also needs pom.xml (spring-boot-starter-parent, spring-boot-starter-web,
+# spring-boot-maven-plugin) and the Maven wrapper (mvnw)
+./mvnw spring-boot:run
+# downloads the dependency graph, scans for beans, boots embedded Tomcat`))
+          "beforeNote" "Nothing listens until the build file, the plugin, application.properties, and the wrapper are all in place — then a launch command boots the embedded Tomcat."
+          "afterLabel" "Latte web"
+          "afterBlocks" (slice
+            (dict "caption" "Main.java" "lang" "java" "code" `import module org.lattejava.http;
+import module org.lattejava.web;
+
+String greet(String name) {
+  return "Hello, " + name + "!";
+}
+
+void main() {
+  new Web()
+      .get("/greeting/{name}", (req, res) ->
+          res.getWriter().write(greet((String) req.getAttribute("name"))))
+      .start(8080);   // ← this line starts the HTTP server. That's it.
+}`)
+            (dict "caption" "shell" "lang" "bash" "code" `latte run`))
+          "afterNote" "No servlet container — it runs straight on the Latte http server, which is competitive with Netty and outperforms Jetty and Tomcat in our benchmarks."
+        ) }}
+      </div>
+    </section>
+
+    <!-- 5. Ceremony -->
+    <section class="border-b border-slate-200 dark:border-slate-800">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Ceremony for the simplest things</h2>
+        <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-3xl">
+          For years, printing a line of text meant a public class, a static main method, and a
+          String array you never used. Java 25 fixed the language; Latte leans all the way in —
+          and <code class="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded text-sm">javaenv</code> means you're never hand-juggling JDK installs to get there.
+        </p>
+        {{ partial "why-compare.html" (dict
+          "beforeLabel" "Classic Java"
+          "beforeBlocks" (slice
+            (dict "caption" "set up, by hand" "lang" "bash" "code" `# download a JDK from Adoptium, unpack it, and wire up your shell:
+mkdir -p ~/dev/java
+curl -L "https://api.adoptium.net/v3/binary/latest/25/ga/mac/aarch64/jdk/hotspot/normal/eclipse" \
+  | tar -xz -C ~/dev/java
+export JAVA_HOME=~/dev/java/jdk-25+36/Contents/Home
+export PATH="$JAVA_HOME/bin:$PATH"
+mkdir -p src/com/example   # package directories, by hand`)
+            (dict "caption" "src/com/example/Main.java" "lang" "java" "code" `package com.example;
+
+public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello, world!");
+  }
+}`)
+            (dict "caption" "shell" "lang" "bash" "code" `javac src/com/example/Main.java
+java -cp src com.example.Main`))
+          "beforeNote" "The class must match the file name, the package must match the directory, and you manage the JDK, the PATH, and the classpath yourself."
+          "afterLabel" "Java 25 + Latte"
+          "afterBlocks" (slice
+            (dict "caption" "set up, once" "lang" "bash" "code" `curl -fsSL https://lattejava.org/javaenv/install | bash
+curl -fsSL https://lattejava.org/cli/install | bash
+javaenv install 25 && javaenv global 25
+latte init`)
+            (dict "caption" "Main.java" "lang" "java" "code" `void main() {
+  IO.println("Hello, world!");
+}`)
+            (dict "caption" "shell" "lang" "bash" "code" `latte run`))
+          "afterNote" "javaenv pins the JDK per project and latte init scaffolds the rest — no PATH, no classpath, no boilerplate class. Just write code and latte run."
+        ) }}
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Closing CTA -->
+  <section class="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
+      <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Get started in five minutes</h2>
+      <p class="mt-4 text-lg text-slate-600 dark:text-slate-400">
+        Install Java, install Latte, create a project, and ship it. No XML. No staging dance.
+      </p>
+      <div class="mt-8 flex items-center justify-center gap-4">
+        <a href="/#getting-started-content" class="px-6 py-3 bg-accent-500 hover:bg-accent-600 text-white font-medium rounded-lg transition-colors">
+          Get Started
+        </a>
+        <a href="{{ .Site.Params.github }}" class="px-6 py-3 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-lg transition-colors" target="_blank" rel="noopener">
+          GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function() {
+    var blocks = document.querySelectorAll('#why-content .highlight');
+    blocks.forEach(function(block) {
+      var pre = block.querySelector('pre');
+      if (!pre) return;
+      var code = pre.querySelector('code');
+      var text = (code || pre).textContent.trim();
+      block.style.position = 'relative';
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.setAttribute('aria-label', 'Copy to clipboard');
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+      btn.addEventListener('click', function() {
+        navigator.clipboard.writeText(text).then(function() {
+          btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+          setTimeout(function() {
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+          }, 2000);
+        });
+      });
+      block.appendChild(btn);
+    });
+  })();
+  </script>
+{{ end }}

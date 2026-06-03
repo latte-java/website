@@ -8,6 +8,7 @@
 
       <!-- Desktop nav -->
       <div class="hidden md:flex items-center gap-6">
+        <a href="/why" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Why Latte?</a>
         <!-- Projects dropdown -->
         <div class="relative" id="projects-dropdown">
           <button type="button" class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" onclick="document.getElementById('projects-menu').classList.toggle('hidden')">
@@ -57,6 +58,7 @@
   <!-- Mobile menu -->
   <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
     <div class="px-4 py-3 space-y-1">
+      <a href="/why" class="block px-2 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">Why Latte?</a>
       <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 py-1">Projects</div>
       {{ range .Site.Menus.projects }}
         <a href="{{ .URL }}" class="block px-2 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded">{{ .Name }}</a>

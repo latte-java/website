@@ -1,0 +1,43 @@
+{{/*
+  Side-by-side "before vs after" comparison.
+  Params:
+    beforeLabel / afterLabel : column header text
+    beforeBlocks / afterBlocks : slice of dicts, each { caption (optional), lang, code }
+    beforeNote / afterNote : optional footnote
+*/}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+  <!-- Before -->
+  <div class="rounded-xl border border-rose-200 dark:border-rose-900/60 overflow-hidden flex flex-col">
+    <div class="px-4 py-2 bg-rose-50 dark:bg-rose-950/30 border-b border-rose-200 dark:border-rose-900/60">
+      <span class="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">{{ .beforeLabel }}</span>
+    </div>
+    <div class="grow">
+      {{ range $i, $b := .beforeBlocks }}
+        <div class="{{ if $i }}border-t border-rose-200 dark:border-rose-900/60{{ end }}">
+          {{ with $b.caption }}<div class="px-4 pt-3 text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ . }}</div>{{ end }}
+          <div class="why-code text-sm">{{ highlight (strings.TrimSpace $b.code) $b.lang "" }}</div>
+        </div>
+      {{ end }}
+    </div>
+    {{ with .beforeNote }}
+      <p class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-rose-200 dark:border-rose-900/60">{{ . }}</p>
+    {{ end }}
+  </div>
+  <!-- After -->
+  <div class="rounded-xl border border-accent-500/40 dark:border-accent-400/40 overflow-hidden flex flex-col">
+    <div class="px-4 py-2 bg-accent-500/10 dark:bg-accent-400/10 border-b border-accent-500/40 dark:border-accent-400/40">
+      <span class="text-xs font-semibold uppercase tracking-wider text-accent-600 dark:text-accent-400">{{ .afterLabel }}</span>
+    </div>
+    <div class="grow">
+      {{ range $i, $b := .afterBlocks }}
+        <div class="{{ if $i }}border-t border-accent-500/40 dark:border-accent-400/40{{ end }}">
+          {{ with $b.caption }}<div class="px-4 pt-3 text-[11px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500">{{ . }}</div>{{ end }}
+          <div class="why-code text-sm">{{ highlight (strings.TrimSpace $b.code) $b.lang "" }}</div>
+        </div>
+      {{ end }}
+    </div>
+    {{ with .afterNote }}
+      <p class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 border-t border-accent-500/40 dark:border-accent-400/40">{{ . }}</p>
+    {{ end }}
+  </div>
+</div>

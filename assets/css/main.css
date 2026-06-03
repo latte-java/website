@@ -44,6 +44,11 @@
   box-shadow: 0 calc(-1 * var(--f)) 0 inset #0005;
 }
 
+/* Code blocks on the Why Latte comparison cards (rendered outside .prose) */
+.why-code .chroma {
+  @apply m-0 p-4 overflow-x-auto;
+}
+
 /* Copy button for code blocks */
 .copy-btn {
   @apply absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors cursor-pointer;
