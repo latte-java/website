@@ -63,6 +63,11 @@ title = "Latte Java"
   weight = 30
 
 [[menus.projects]]
+  name = "json"
+  pageRef = "/json"
+  weight = 35
+
+[[menus.projects]]
   name = "http"
   pageRef = "/http"
   weight = 40
