@@ -23,3 +23,4 @@ Welcome to the Latte `json` documentation. `json` is a compile-time JSON library
 
 - [Catch-All Members](catch-all/) — capturing unknown JSON keys with `@JSONCatchAll`
 - [Polymorphism](polymorphism/) — discriminated sealed hierarchies with `@JSONTypeInfo` and `@JSONSubtype`
+- [Performance](performance/) — JMH benchmarks against Jackson and Gson

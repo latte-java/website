@@ -14,7 +14,7 @@ Add the processor to your `project.latte`:
 ```groovy
 dependencies {
   group(name: "compile-processors") {
-    dependency(id: "org.lattejava:json:0.2.0")
+    dependency(id: "org.lattejava:json:0.4.0")
   }
 }
 ```
@@ -35,10 +35,11 @@ User   back = UserJSON.fromJSON(json);   // deserialize
 
 ## Features
 
+- **Fast** — throughput at or above Jackson with far less allocation ([benchmarks](docs/performance/))
 - **Compile-time codegen** — zero reflection; the companion is plain generated Java
 - **No runtime dependency** — `org.lattejava:json` never lands on your compile classpath or runtime path
 - **Records, classes, and JavaBeans** — plus discriminated sealed hierarchies
-- **Flexible mapping** — naming strategies, per-field renames, catch-all members, and date/time control
+- **Flexible mapping** — naming strategies, per-field renames, catch-all members, arbitrarily nested collections, and date/time control
 
 [Read the documentation →](docs/)
 

@@ -44,7 +44,10 @@ public record Token(
 ```
 
 ```json
-{"issuedAt":1781112600,"expiresAt":1781112600000}
+{
+  "issuedAt": 1781112600,
+  "expiresAt": 1781112600000
+}
 ```
 
 ## Validation

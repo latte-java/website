@@ -32,7 +32,7 @@ curl -fsSL https://lattejava.org/cli/install | bash
 ```groovy
 dependencies {
   group(name: "compile-processors") {
-    dependency(id: "org.lattejava:json:0.2.0")
+    dependency(id: "org.lattejava:json:0.4.0")
   }
 }
 ```
@@ -77,7 +77,11 @@ User fromBytes  = UserJSON.fromJSON(bytes);  // from byte[]
 `json` is the resulting wire form:
 
 ```json
-{"name":"alice","age":37,"email":"alice@example.com"}
+{
+  "name": "alice",
+  "age": 37,
+  "email": "alice@example.com"
+}
 ```
 
 There's no reflection anywhere on this path — the companion is plain generated Java that reads and writes the fields directly.

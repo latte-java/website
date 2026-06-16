@@ -14,12 +14,22 @@ The annotated member must be typed exactly `Map<String, Object>`, and a type may
 public record Response(String id, int code, @JSONCatchAll Map<String, Object> extras) {}
 ```
 
+The `@JSONCatchAll` annotation is what makes this a catch-all. A `Map<String, Object>` member **without** it is a [dynamic object](../supported-types/#dynamic-objects) — captured under its own key rather than spread across the top level. A type can have both: the catch-all collects leftover unknown keys while each dynamic-object member captures its own.
+
 ## Round-trip
 
 Given this input:
 
 ```json
-{"id":"a","code":7,"note":"hi","tags":[1,2],"meta":{"k":"v"}}
+{
+  "id": "a",
+  "code": 7,
+  "note": "hi",
+  "tags": [1, 2],
+  "meta": {
+    "k": "v"
+  }
+}
 ```
 
 `id` and `code` populate their components; everything else lands in `extras`:

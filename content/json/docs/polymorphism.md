@@ -32,7 +32,11 @@ String json = PetJSON.toJSON(pet);
 ```
 
 ```json
-{"petType":"Dog","name":"Rex","packSize":3}
+{
+  "petType": "Dog",
+  "name": "Rex",
+  "packSize": 3
+}
 ```
 
 ## The discriminator
