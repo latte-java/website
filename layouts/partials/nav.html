@@ -10,31 +10,35 @@
       <div class="hidden md:flex items-center gap-6">
         <a href="/why" class="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Why Latte?</a>
         <!-- Projects dropdown -->
-        <div class="relative" id="projects-dropdown">
-          <button type="button" class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" onclick="document.getElementById('projects-menu').classList.toggle('hidden')">
+        <div class="relative group" id="projects-dropdown">
+          <button type="button" aria-controls="projects-menu" aria-expanded="false" class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
             Projects
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            <svg class="w-4 h-4" aria-hidden="true" focusable="false" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
           </button>
-          <div id="projects-menu" class="hidden absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1">
-            {{ range .Site.Menus.projects }}
-              <a href="{{ .URL }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">{{ .Name }}</a>
-            {{ end }}
+          <div id="projects-menu" class="absolute top-full left-0 pt-2 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-[opacity,visibility] duration-150 delay-200 group-hover:delay-0 group-focus-within:delay-0">
+            <ul class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1">
+              {{ range .Site.Menus.projects }}
+                <li><a href="{{ .URL }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">{{ .Name }}</a></li>
+              {{ end }}
+            </ul>
           </div>
         </div>
 
         <!-- Docs dropdown -->
-        <div class="relative" id="docs-dropdown">
-          <button type="button" class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" onclick="document.getElementById('docs-menu').classList.toggle('hidden')">
+        <div class="relative group" id="docs-dropdown">
+          <button type="button" aria-controls="docs-menu" aria-expanded="false" class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
             Docs
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            <svg class="w-4 h-4" aria-hidden="true" focusable="false" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
           </button>
-          <div id="docs-menu" class="hidden absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1">
-            {{ range .Site.Menus.projects }}
-              {{ $entry := . }}
-              {{ with site.GetPage (printf "%s/docs" .PageRef) }}
-                <a href="{{ .RelPermalink }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">{{ $entry.Name }}</a>
+          <div id="docs-menu" class="absolute top-full left-0 pt-2 w-48 invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-[opacity,visibility] duration-150 delay-200 group-hover:delay-0 group-focus-within:delay-0">
+            <ul class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg py-1">
+              {{ range .Site.Menus.projects }}
+                {{ $entry := . }}
+                {{ with site.GetPage (printf "%s/docs" .PageRef) }}
+                  <li><a href="{{ .RelPermalink }}" class="block px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">{{ $entry.Name }}</a></li>
+                {{ end }}
               {{ end }}
-            {{ end }}
+            </ul>
           </div>
         </div>
 
@@ -88,13 +92,25 @@
     });
   }
 
-  // Close dropdowns when clicking outside
-  document.addEventListener('click', function(e) {
-    [['projects-dropdown', 'projects-menu'], ['docs-dropdown', 'docs-menu']].forEach(function(pair) {
-      var dropdown = document.getElementById(pair[0]);
-      var menu = document.getElementById(pair[1]);
-      if (dropdown && menu && !dropdown.contains(e.target)) {
-        menu.classList.add('hidden');
+  // Keep aria-expanded in sync with the CSS hover/focus state, and allow Escape to dismiss.
+  ['projects-dropdown', 'docs-dropdown'].forEach(function(id) {
+    var group = document.getElementById(id);
+    var btn = group && group.querySelector('button[aria-controls]');
+    var menu = btn && document.getElementById(btn.getAttribute('aria-controls'));
+    if (!group || !btn || !menu) return;
+    var expand = function() { btn.setAttribute('aria-expanded', 'true'); };
+    var collapse = function() { btn.setAttribute('aria-expanded', 'false'); menu.classList.remove('hidden'); };
+    group.addEventListener('mouseenter', expand);
+    group.addEventListener('focusin', expand);
+    group.addEventListener('mouseleave', collapse);
+    group.addEventListener('focusout', function(e) {
+      if (!group.contains(e.relatedTarget)) collapse();
+    });
+    group.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && btn.getAttribute('aria-expanded') === 'true') {
+        menu.classList.add('hidden'); // force-collapse despite hover/focus-within
+        btn.setAttribute('aria-expanded', 'false');
+        btn.focus();
       }
     });
   });
