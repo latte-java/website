@@ -71,3 +71,8 @@ title = "Latte Java"
   name = "http"
   pageRef = "/http"
   weight = 40
+
+[[menus.projects]]
+  name = "database"
+  pageRef = "/database"
+  weight = 45
