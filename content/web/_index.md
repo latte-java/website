@@ -16,7 +16,7 @@ latte init web
 Or add it to an existing Latte project:
 
 ```groovy
-dependency(id: "org.lattejava:web:0.1.0")
+dependency(id: "org.lattejava:web:0.9.0")
 ```
 
 ## Quick Start

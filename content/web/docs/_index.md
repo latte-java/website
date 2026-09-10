@@ -19,7 +19,10 @@ Welcome to the Latte `web` documentation. The pages below walk through everythin
 - [Configuration](configuration/) - Reading settings from env vars, system properties, and files
 - [Request Bodies](request-bodies/) - `BodyHandler`, `BodySupplier`, and the built-in JSON supplier
 - [Middleware](middleware/) - The pipeline, ordering, and writing your own
+- [Dependency Injection](dependency-injection/) - Building handlers, controllers, and middleware from any DI framework
 - [Templates](templates/) - Rendering JTE templates to the response
+- [Flash Messages](flash-messages/) - Messages that survive a redirect and show on the next page
+- [Message Bundles](message-bundles/) - Localized display text from properties files laid out like the URL space
 - [Cookies](cookies/) - Reading, writing, and encrypting cookies
 - [Logging](logging/) - The swappable logger used by the web and HTTP layers
 

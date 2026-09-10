@@ -131,6 +131,7 @@ The framework ships several middlewares you'll use in production:
 - [`OriginChecks`](../csrf-protection/) — CSRF defense via `Origin` validation
 - [`StaticResources`](../static-files/) — serves files from disk
 - [`ExceptionHandler`](../exception-handling/) — renders exceptions into HTTP responses
+- [`FlashMessages`](../flash-messages/) — carries flash messages across redirects in a cookie
 - `FilteredMiddleware` — applies a wrapped middleware only to a path prefix (above)
 - [OIDC](../oidc/) — OpenID Connect authentication. The session endpoints (`OIDC.sessionEndpoints(...)`) and the protection middlewares (`oidc.authenticated()`, `oidc.hasAnyRole(...)`, …) are all middlewares.
 

@@ -112,25 +112,7 @@ test.get("/hello")
     .assertBodyAs(string, s -> s.contains("Hello"));
 ~~~~
 
-**`JSONBodyAsserter`** parses the body as JSON and asserts over the tree using [RFC 6901 JSON Pointers](https://www.rfc-editor.org/rfc/rfc6901):
-
-- `equalTo(String json)` / `equalTo(Object value)` — whole-document equality. Object keys are always unordered; arrays default to unordered (multiset) comparison.
-- `hasElement(String pointer)` / `hasNoElement(String pointer)` — assert a node exists or not.
-- `hasValue(String pointer, String expected)` — text-value comparison (the JSON `33` matches `"33"`).
-- `hasValue(String pointer, Object expected)` — strictly typed comparison via `ObjectMapper.valueToTree`.
-- `unorderedArrays(boolean)` — toggle multiset vs. positional array comparison (also a constructor argument).
-
-~~~~ java
-var json = new JSONBodyAsserter();
-test.withHeader("Accept", "application/json")
-    .get("/api/users/42")
-    .assertStatus(200)
-    .assertBodyAs(json, j -> j
-        .hasValue("/id", 42)
-        .hasValue("/name", "Alice")
-        .hasElement("/roles")
-    );
-~~~~
+**`JSONBodyAsserter`** (in `org.lattejava.web.test.json`) parses the body as JSON and asserts over the tree, either element by element or against a checked-in expected file. It has its own section: [JSON assertions](#json-assertions).
 
 ### Resetting between requests
 
@@ -142,6 +124,155 @@ test.get("/hello")
     .reset()                 // fresh cookies + request state
     .get("/goodbye")
     .assertStatus(200);
+~~~~
+
+## JSON assertions
+
+`JSONBodyAsserter` lives in `org.lattejava.web.test.json`. It parses the response body with the Latte `json` library and holds values in their natural Java shapes (`Map`, `List`, `String`, `Long`, `BigInteger`, `BigDecimal`, `Boolean`, and `null`). Element paths are [RFC 6901 JSON Pointers](https://www.rfc-editor.org/rfc/rfc6901): `""` is the root, `/user/name` is a property, `/items/0/id` indexes into an array, and a `/` inside a property name is escaped as `~1`.
+
+Two rules apply to every comparison:
+
+- Object keys are unordered, per JSON semantics.
+- Types are strict. The number `1` does not match `1.0`, and the number `33` does not match the string `"33"`.
+
+Arrays are compared as unordered multisets by default (`[1, 2, 3]` matches `[3, 2, 1]`, but `[1, 1, 2]` does not match `[1, 2, 2]`). Pass `false` to the constructor or call `unorderedArrays(false)` for positional comparison. The setting can be changed between assertions on the same instance.
+
+### Elements and values
+
+- `hasElement(String pointer)` / `hasNoElement(String pointer)` — assert a node exists or not.
+- `hasValue(String pointer, String expected)` — compares the value's text form, so the JSON `33` matches `"33"` here.
+- `hasValue(String pointer, Object expected)` — strictly typed comparison. The expected value is converted to its JSON shape the same way the `json` library would serialize it. A missing pointer is treated as `null`, so `hasValue("/missing", null)` passes.
+
+~~~~ java
+import org.lattejava.web.test.json.*;
+
+var json = new JSONBodyAsserter();
+test.withHeader("Accept", "application/json")
+    .get("/api/users/42")
+    .assertStatus(200)
+    .assertBodyAs(json, j -> j
+        .hasValue("/id", 42)
+        .hasValue("/name", "Alice")
+        .hasElement("/roles")
+        .hasNoElement("/password")
+    );
+~~~~
+
+### Whole-document equality
+
+- `equalTo(String json)` — the body must be JSON-equivalent to the given text. Whitespace and key order are ignored.
+- `equalTo(Object value)` — the body must equal the JSON form of a Java value. `Map`s become objects, `Iterable`s and arrays become arrays, enums use `name()`, and `UUID`, `URI`, `URL`, and the `java.time` types use their string forms. Records and POJOs with public fields are converted by reflection, with `null` components omitted. In a named module, the record's package must be opened to `org.lattejava.web`.
+- `equalTo(Function<byte[], T> converter, T expected)` — parses the body with your own function, typically a generated `fromJSON` method, and compares with `equals`.
+
+~~~~ java
+test.get("/api/users/42")
+    .assertBodyAs(new JSONBodyAsserter(), j -> j.equalTo("""
+        {"id": 42, "name": "Alice", "roles": ["admin", "user"]}
+        """));
+
+test.get("/api/users/42")
+    .assertBodyAs(new JSONBodyAsserter(), j -> j.equalTo(UserJSON::fromJSON, expectedUser));
+~~~~
+
+Comparing a response against the same `@JSON` object that produced it is circular: a change to the object changes both sides, so a wire-format break still passes. For public API tests, prefer an expected file.
+
+### Expected files
+
+`equalToFile(Path file, Object... substitutions)` compares the body against a JSON file committed to the repo. Any change to the wire format then shows up as a diff to a checked-in file. The convention is to keep the files under `src/test/json`, referenced by `Path`:
+
+~~~~ java
+test.get("/api/users/42")
+    .assertStatus(200)
+    .assertBodyAs(new JSONBodyAsserter(), j ->
+        j.equalToFile(Paths.get("src/test/json/users/get.json")));
+~~~~
+
+`src/test/json/users/get.json`:
+
+~~~~ json
+{
+  "id": 42,
+  "name": "Alice",
+  "roles": ["admin", "user"]
+}
+~~~~
+
+The comparison is strict in both directions: an extra field, a missing field, or a type change all fail. Object keys are unordered, but **arrays are always positional** because order is part of the wire format. `equalToFile` ignores the `unorderedArrays` setting.
+
+On failure, both documents are pretty-printed so the IDE diff shows only the semantic change.
+
+### Substitutions
+
+A test often knows a value that changes from run to run, such as an ID it created or the port the server is on. Reference it in the file as `${name}` and supply the value as a name/value pair after the path:
+
+~~~~ json
+{
+  "id": "${id}",
+  "count": "${count}",
+  "active": "${active}",
+  "self": "http://localhost:${port}/users/${id}"
+}
+~~~~
+
+~~~~ java
+j.equalToFile(Paths.get("src/test/json/users/get.json"),
+    "id", user.id(), "count", 42, "active", true, "port", 8080);
+~~~~
+
+A string node that is exactly one token takes the JSON type of the supplied value. `"count": "${count}"` becomes the number `42`, and `"active": "${active}"` becomes the boolean `true`. Keeping the token inside quotes keeps the file valid JSON for editors. A string node with an embedded token, like the `self` URL above, splices in the value's text form and stays a string.
+
+Substitution happens on the parsed tree, never by text templating, so a value containing quotes or braces cannot break the document.
+
+Two mistakes fail the assertion: a `${...}` token in the file that names nothing you supplied, and a supplied substitution the file never references. Both are there to catch typos and stale tests. To put a literal `${` in the expected text, escape it as `$${`.
+
+### Placeholders
+
+For values the test cannot know, such as a generated UUID or a timestamp, use a placeholder. A placeholder must be the entire string node:
+
+| Placeholder        | Matches                                                     |
+|--------------------|-------------------------------------------------------------|
+| `${anyBoolean}`    | Any boolean                                                 |
+| `${anyInstant}`    | A string accepted by `Instant.parse` (ISO 8601, not epoch millis) |
+| `${anyNumber}`     | Any JSON number                                             |
+| `${anyString}`     | Any string                                                  |
+| `${anyUUID}`       | A string accepted by `UUID.fromString`                      |
+| `${regex:PATTERN}` | A scalar whose text form fully matches `PATTERN`            |
+
+~~~~ json
+{
+  "id": "${anyUUID}",
+  "created": "${anyInstant}",
+  "version": "${regex:\\d+\\.\\d+\\.\\d+}",
+  "name": "Alice"
+}
+~~~~
+
+A placeholder asserts the type at its position. The key must still be present, and a placeholder never matches a JSON `null`.
+
+`anyNumber`, `anyString`, and `anyInstant` accept an inclusive range after a colon. Either bound may be left empty for an open end, but not both:
+
+| Token                                                        | Constraint                        |
+|--------------------------------------------------------------|-----------------------------------|
+| `${anyNumber:[-10:100]}`                                     | Value between -10 and 100         |
+| `${anyNumber:[0:]}`                                          | Value at least 0                  |
+| `${anyString:[2:5]}`                                         | Length between 2 and 5            |
+| `${anyInstant:[2026-01-01T00:00:00Z/2026-12-31T00:00:00Z]}`  | Instant within the interval       |
+| `${anyInstant:[2026-01-01T00:00:00Z/]}`                      | Instant on or after the start     |
+
+Instant ranges use a slash separator, following ISO 8601 interval notation, because instants contain colons. The `regex` pattern runs to the closing brace at the very end of the node, so it may contain colons and braces of its own.
+
+### Generating and updating files
+
+You do not have to write expected files by hand:
+
+- **Missing file:** the file is generated from the actual response, pretty-printed with a two-space indent in wire key order, and the assertion fails with a reminder to review and commit it. Replace any run-specific values with substitutions or placeholders before committing.
+- **Mismatch with `-Dlatte.web.json.update=true`:** the file is rewritten from the actual response and the assertion passes. Tokens that still describe the actual value are preserved, so a `${id}` whose value matches stays `${id}`, and a `${anyInstant}` that still matches stays a placeholder. Everything else is written literally. Review the result with `git diff`.
+- **In CI:** files are never written. A missing file fails the test, and setting the update property fails the test on its own. CI is detected when the `CI` environment variable is set and non-empty. Override the protected `ci()` method in a subclass to change the detection.
+
+Set the property for a single run, for example as a VM option in your IDE's run configuration, or temporarily through the [TestNG plugin's](../../../cli/docs/plugin-java-testng/#jvm-arguments) JVM arguments in `project.latte`:
+
+~~~~ groovy
+javaTestNG.settings.jvmArguments = "-Dlatte.web.json.update=true"
 ~~~~
 
 ## Authenticating with `OIDCTestFixture`
@@ -178,6 +309,7 @@ import module org.lattejava.web;
 
 import org.lattejava.web.oidc.*;
 import org.lattejava.web.test.*;
+import org.lattejava.web.test.json.*;
 
 void protectedRouteTest() throws Exception {
   var oidcConfig = OIDCConfig.builder()

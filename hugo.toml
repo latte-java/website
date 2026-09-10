@@ -26,6 +26,11 @@ title = "Latte Java"
   source = 'hugo_stats.json'
   target = 'assets/notwatching/hugo_stats.json'
 
+[security]
+  [security.exec]
+    # Hugo 0.165 dropped tailwindcss from the default allow list; css.TailwindCSS needs it to run node_modules/.bin/tailwindcss
+    allow = ['^(dart-)?sass$', '^go$', '^git$', '^node$', '^npx$', '^postcss$', '^tailwindcss$']
+
 [markup.highlight]
   noClasses = false
 
