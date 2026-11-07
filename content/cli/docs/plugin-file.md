@@ -10,14 +10,14 @@ plugin: true
 
 The file plugin provides a number of methods that help you deal with files and archives.
 
-**LATEST VERSION: 0.3.0**
+**LATEST VERSION: 0.6.2**
 
 ## Loading the plugin
 
 Here is how you load this plugin:
 
 ~~~~ groovy
-file = loadPlugin(id: "org.lattejava.plugin:file:0.3.0")
+file = loadPlugin(id: "org.lattejava.plugin:file:0.6.2")
 ~~~~ 
 
 ## FileSets
@@ -134,6 +134,39 @@ The `delete` method allows you to delete zero or more files. It takes one or mor
 ~~~~ groovy
 file.delete {
   fileSet(dir: "build/example", includePatterns: [~/foobar.+/])
+}
+~~~~ 
+
+## Executing commands
+
+The `execute` method runs an external command from the project directory and waits for it to finish. The command's output and errors are sent to the build's output. If the command exits with a non-zero code, the build fails. The method returns the command's exit code. It takes these parameters:
+
+| name           | description                                                                                                                                                           | type                    | required |
+|----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|----------|
+| cmd            | The command to run. A String is split on whitespace into the command and its arguments, and quotes are not handled. Use a List to pass arguments that contain spaces. | String or List\<String> | true     |
+| ignoreFailures | If `true`, the build does not fail when the command exits with a non-zero code. The build still fails if the command can't be started. Defaults to `false`.           | Boolean                 | false    |
+
+Here are examples of calling this method:
+
+~~~~ groovy
+file.execute(cmd: "some-command --option foo bar")
+file.execute(cmd: ["sh", "-c", "echo 'hello world'"])
+int exitCode = file.execute(cmd: "some-command", ignoreFailures: true)
+~~~~ 
+
+The command gets the same environment variables as the build. You can add environment variables, or replace inherited ones, with one or more `env` definitions inside the closure. Each `env` takes these parameters:
+
+| name  | description                            | type   | required |
+|-------|----------------------------------------|--------|----------|
+| name  | The name of the environment variable.  | String | true     |
+| value | The value of the environment variable. | String | true     |
+
+Here is an example of using environment variables:
+
+~~~~ groovy
+file.execute(cmd: "./foo.sh") {
+  env(name: "FILE", value: "bar.txt")
+  env(name: "VERSION", value: "${project.version}")
 }
 ~~~~ 
 
